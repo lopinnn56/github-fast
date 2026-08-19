@@ -1,0 +1,7 @@
+{
+    "name": "github-fast",
+    "version": "2.0.0",
+    "private": true,
+    "type": "module",
+    "description": "纯前端 GitHub 加速工具（静态托管，无构建步骤）"
+}
