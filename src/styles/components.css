@@ -262,7 +262,9 @@
 .node-row .n-name {
     font-weight: 600;
     cursor: pointer;
-    min-width: 0;
+    /* 最小可见宽度：行内再挤也保留可辨识的名称片段 */
+    min-width: 88px;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -411,6 +413,11 @@
     .hero-cta .btn { width: 100%; }
     .results-head-right { width: 100%; justify-content: space-between; }
     .node-row .n-host { display: none; }
+    /* 节点行按钮过多会挤没节点名：窄屏下「信息」与「操作」拆为两行 */
+    .node-row { flex-wrap: wrap; row-gap: 8px; }
+    .node-row .n-info { flex: 1 1 100%; }
+    .node-row .n-actions { margin-left: auto; }
+    .node-row .n-mini { padding: 4px 10px; font-size: .76rem; }
     .group-head .ri-actions { width: 100%; }
     .tool-panel, .nodes-card { padding: 22px 18px; }
     .footer-grid { grid-template-columns: 1fr; gap: 28px; }

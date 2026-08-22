@@ -1,6 +1,6 @@
 {
     "name": "github-fast",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "private": true,
     "type": "module",
     "description": "纯前端 GitHub 加速工具（Vue 3 + Vite）",
