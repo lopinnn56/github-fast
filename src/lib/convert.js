@@ -1,6 +1,15 @@
-// GitHub hosts allowed to be written without a protocol (also covers www./gist/raw subdomains)
+/**
+ * 链接识别与加速地址拼装 —— 纯函数库，无 DOM / 存储副作用，可直接单测。
+ */
+
+// 允许省略协议直接书写的 GitHub 系域名（覆盖 www./gist./raw. 等子域）
 const GITHUB_HOST_NO_PROTO = /^(?:www\.)?(?:github\.com|gist\.github\.com|(?:[\w-]+\.)?githubusercontent\.com|(?:[\w-]+\.)?githubassets\.com)(?:\/|$)/i;
 
+/**
+ * 规范化用户输入：补全协议、归一 www 前缀、支持 user/repo 简写。
+ * @param {string} raw 原始输入（可为空）
+ * @returns {string} 规范化后的 URL；无法识别时返回空串
+ */
 export function normalizeInput(raw) {
     let s = (raw || '').trim();
     if (!s) return '';
@@ -18,15 +27,25 @@ export function normalizeInput(raw) {
     return s;
 }
 
+/**
+ * 判断是否为 GitHub 系链接（github.com 及其子域）。
+ * @param {string} url
+ * @returns {boolean}
+ */
 export function isGitHubUrl(url) {
     try {
         const u = new URL(url);
         return /(^|\.)(github\.com|githubusercontent\.com|githubassets\.com)$/i.test(u.hostname);
-    } catch (e) {
+    } catch {
         return false;
     }
 }
 
+/**
+ * 识别链接类型：raw / release / file / repo / gist。
+ * @param {string} url
+ * @returns {'raw'|'release'|'file'|'repo'|'gist'}
+ */
 export function detectType(url) {
     try {
         const u = new URL(url);
@@ -40,13 +59,19 @@ export function detectType(url) {
         // 注：对 pathname 匹配，query 不参与；常见归档后缀均视为 release 下载
         if (/\.(zip|tar|gz|tgz|bz2|xz|rar|7z|apk|dmg|exe|deb|rpm|appimage)$/i.test(p)) return 'release';
         return 'repo';
-    } catch (e) {
+    } catch {
         return 'repo';
     }
 }
 
 export const TYPE_LABEL = { raw: 'RAW', release: 'RELEASE', file: 'FILE', repo: 'REPO', gist: 'GIST', clone: 'CLONE' };
 
+/**
+ * 按节点规则把原始 GitHub 地址转换为加速地址。
+ * @param {string} input 原始 URL
+ * @param {{prefix:string, mode?:'prefix'|'replace'}|null} node 节点配置
+ * @returns {string} 加速地址；节点数据损坏时原样返回输入
+ */
 export function buildAccelUrl(input, node) {
     // 防御：损坏的节点数据（缺失 prefix）不应产出 undefinedxxx 链接
     if (!node || typeof node.prefix !== 'string' || !node.prefix) return input;
@@ -55,20 +80,39 @@ export function buildAccelUrl(input, node) {
             const u = new URL(input);
             const host = node.prefix.replace(/^https?:\/\//, '').replace(/\/+$/, '');
             return u.protocol + '//' + host + u.pathname + u.search + u.hash;
-        } catch (e) {
+        } catch {
             // fall through to prefix mode
         }
     }
     return node.prefix + input.replace(/^https?:\/\//, '');
 }
 
+/**
+ * 从节点 prefix 中提取裸主机名用于展示。
+ * @param {string} prefix
+ * @returns {string}
+ */
 export function hostOf(prefix) {
     return prefix.replace(/^https?:\/\//, '').replace(/\/+$/, '');
+}
+
+/**
+ * 生成 git clone 命令文本。
+ * @param {string} targetUrl 已转换的加速地址
+ * @returns {string}
+ */
+export function buildCloneCommand(targetUrl) {
+    return 'git clone ' + targetUrl;
 }
 
 // 单次批量转换的上限，防止粘贴超大文本时 DOM 爆炸
 export const MAX_BATCH = 100;
 
+/**
+ * 把多行文本解析为去重后的规范化 URL 列表。
+ * @param {string} text
+ * @returns {string[]}
+ */
 export function parseBatch(text) {
     const seen = new Set();
     const out = [];

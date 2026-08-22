@@ -1,4 +1,8 @@
-const DEFAULT_NODES = [
+/**
+ * 节点数据核心逻辑 —— 与 Vue 解耦，可在 Node 环境直接单测。
+ * 存储格式：v3 = { main: Node[], pinned: Node[] }（当前），v2 = Node[]（历史）。
+ */
+export const DEFAULT_NODES = [
     { name: 'ghproxy.net', prefix: 'https://ghproxy.net/', mode: 'prefix' },
     { name: 'gh.dpik.top', prefix: 'https://gh.dpik.top/', mode: 'prefix' },
     { name: 'github.tbap.top', prefix: 'https://github.tbap.top/', mode: 'prefix' },
@@ -79,130 +83,62 @@ const DEFAULT_NODES = [
     { name: 'gh.qfmc0721.cc.cd', prefix: 'https://gh.qfmc0721.cc.cd/', mode: 'prefix' }
 ];
 
-const STORAGE_KEY = 'gh_accel_nodes_v3';
+export const STORAGE_KEY = 'gh_accel_nodes_v3';
+export const LEGACY_KEYS = ['gh_accel_nodes_v2'];
 
-let mainNodes = [];
-let pinnedNodes = [];
-
-loadNodes();
-
-// 校验节点结构，过滤掉损坏的 localStorage 数据（避免 undefined prefix 产生坏链接）
-function validNode(n) {
+/** 校验节点结构，过滤损坏数据（避免 undefined prefix 产生坏链接） */
+export function validNode(n) {
     return !!n && typeof n === 'object' && typeof n.prefix === 'string' && /^https?:\/\//i.test(n.prefix) && typeof n.name === 'string';
-}
-
-function loadNodes() {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            const p = JSON.parse(raw);
-            if (p && Array.isArray(p.main)) {
-                mainNodes = p.main.filter(validNode);
-                pinnedNodes = Array.isArray(p.pinned) ? p.pinned.filter(validNode) : [];
-                purgeLegacyKeys();
-                return;
-            }
-        }
-    } catch (e) {
-        // ignore
-    }
-    try {
-        const raw2 = localStorage.getItem('gh_accel_nodes_v2');
-        if (raw2) {
-            const p = JSON.parse(raw2);
-            if (Array.isArray(p) && p.length) {
-                mainNodes = p.filter(validNode);
-                pinnedNodes = [];
-                // 迁移到 v3 后立即落盘并清理旧 key
-                saveNodes();
-                purgeLegacyKeys();
-                return;
-            }
-        }
-    } catch (e) {
-        // ignore
-    }
-    mainNodes = clone(DEFAULT_NODES);
-    pinnedNodes = [];
-    purgeLegacyKeys();
-}
-
-function purgeLegacyKeys() {
-    try { localStorage.removeItem('gh_accel_nodes_v2'); } catch (e) { /* ignore */ }
-}
-
-function saveNodes() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ main: mainNodes, pinned: pinnedNodes }));
-    } catch (e) {
-        // ignore
-    }
 }
 
 function clone(list) {
     return JSON.parse(JSON.stringify(list));
 }
 
-export function getMain() {
-    return mainNodes;
+/**
+ * 从 storage 读取节点状态，自动完成 v3 -> v2 -> 默认 的回退与迁移。
+ * 迁移语义与 v2.x 完全一致，保证老用户升级后节点/置顶不丢。
+ * @param {Storage|null} storage 类 localStorage 实例；null 时直接用默认节点
+ * @returns {{main: Node[], pinned: Node[], migrated: boolean}} migrated=true 表示从旧版本落盘迁移
+ */
+export function loadNodeState(storage) {
+    if (storage) {
+        try {
+            const raw = storage.getItem(STORAGE_KEY);
+            if (raw) {
+                const p = JSON.parse(raw);
+                if (p && Array.isArray(p.main)) {
+                    return {
+                        main: p.main.filter(validNode),
+                        pinned: Array.isArray(p.pinned) ? p.pinned.filter(validNode) : [],
+                        migrated: false
+                    };
+                }
+            }
+        } catch { /* fallthrough */ }
+        try {
+            const raw2 = storage.getItem('gh_accel_nodes_v2');
+            if (raw2) {
+                const p = JSON.parse(raw2);
+                if (Array.isArray(p) && p.length) {
+                    // v2 -> v3：旧数组即主列表，置顶队列为空；由调用方负责落盘并清理旧 key
+                    return { main: p.filter(validNode), pinned: [], migrated: true };
+                }
+            }
+        } catch { /* fallthrough */ }
+    }
+    return { main: clone(DEFAULT_NODES), pinned: [], migrated: false };
 }
 
-export function getPinned() {
-    return pinnedNodes;
-}
-
-export function getAll() {
-    return pinnedNodes.concat(mainNodes);
-}
-
-export function pinNode(i) {
-    if (i < 0 || i >= mainNodes.length) return;
-    const node = mainNodes.splice(i, 1)[0];
-    pinnedNodes.unshift(node);
-    saveNodes();
-}
-
-export function unpinNode(i) {
-    if (i < 0 || i >= pinnedNodes.length) return;
-    const node = pinnedNodes.splice(i, 1)[0];
-    mainNodes.push(node);
-    saveNodes();
-}
-
-export function removeMain(i) {
-    if (i < 0 || i >= mainNodes.length) return;
-    mainNodes.splice(i, 1);
-    saveNodes();
-}
-
-export function removePinned(i) {
-    if (i < 0 || i >= pinnedNodes.length) return;
-    pinnedNodes.splice(i, 1);
-    saveNodes();
-}
-
-export function reorderMain(from, to) {
-    if (from === to) return;
-    // 越界保护：splice 越界会把 undefined 插入数组
-    if (from < 0 || from >= mainNodes.length) return;
-    if (to < 0 || to >= mainNodes.length) return;
-    const item = mainNodes.splice(from, 1)[0];
-    mainNodes.splice(to, 0, item);
-    saveNodes();
-}
-
-export function reorderPinned(from, to) {
-    if (from === to) return;
-    if (from < 0 || from >= pinnedNodes.length) return;
-    if (to < 0 || to >= pinnedNodes.length) return;
-    const item = pinnedNodes.splice(from, 1)[0];
-    pinnedNodes.splice(to, 0, item);
-    saveNodes();
-}
-
-export function reset() {
-    mainNodes = clone(DEFAULT_NODES);
-    pinnedNodes = [];
-    saveNodes();
-    return getAll();
+/**
+ * 把状态序列化进 storage，并清理历史版本的 key。
+ * @param {Storage|null} storage
+ * @param {{main: Node[], pinned: Node[]}} state
+ */
+export function saveNodeState(storage, state) {
+    if (!storage) return;
+    try {
+        storage.setItem(STORAGE_KEY, JSON.stringify({ main: state.main, pinned: state.pinned }));
+        LEGACY_KEYS.forEach(function (k) { storage.removeItem(k); });
+    } catch { /* 配额满 / 隐私模式：静默降级为内存态 */ }
 }

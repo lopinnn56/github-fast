@@ -2,7 +2,7 @@
 
 将 GitHub 链接一键转换为加速镜像，解决下载慢、克隆卡、Raw 打不开的问题。
 
-> 纯前端静态站点 · 零依赖 · 不代理、不缓存任何数据，链接仅在浏览器本地拼接生成。
+> 纯前端静态站点 · Vue 3 构建 · 不代理、不缓存任何数据，链接仅在浏览器本地拼接生成。
 
 ---
 
@@ -90,11 +90,11 @@
 
 ## 六、技术说明
 
-- **纯静态零依赖**：`index.html` + `style.css` + `js/`（ES Modules，无任何第三方依赖、无构建步骤），可直接用任意静态服务器 / GitHub Pages 托管；
-- **模块化结构**：`js/convert.js`（链接解析与构建）、`js/nodes.js`（节点管理）、`js/speed.js`（并发测速与缓存）、`js/ui.js`（主题 / toast / 复制）、`js/main.js`（页面逻辑）；
+- **Vue 3 + Vite**：单页应用，组件化开发；生产构建产物为纯静态文件（`dist/`），可托管在任意静态服务器 / Cloudflare Pages；
+- **目录结构**：`src/lib/`（纯函数库：链接解析、节点存储、剪贴板）、`src/composables/`（响应式状态：节点仓库、测速、模式、Toast）、`src/components/`（UI 组件）、`tests/`（Vitest 单元测试）；
 - **隐私友好**：不发送你的链接到任何服务器（节点测速为浏览器直连节点本身），不记录、不缓存；
 - **本地拼接**：所有加速 URL 均在浏览器端通过字符串拼接生成；
-- **节点持久化**：你的节点增删 / 排序保存在浏览器 `localStorage`；测速结果缓存在 `sessionStorage`（5 分钟）。
+- **节点持久化**：你的节点增删 / 排序保存在浏览器 `localStorage`（自动兼容并迁移 v2 旧数据）；测速结果缓存在 `sessionStorage`（5 分钟）。
 
 ---
 
@@ -115,10 +115,12 @@
 ### 本地开发
 
 ```bash
-npm install        # 安装 esbuild / eslint 等开发依赖
-npm run dev        # 监听模式，实时构建到 dist/（用任意静态服务器指向 dist/ 即可预览）
-npm run lint       # ESLint 代码检查
+npm install        # 安装 Vue / Vite / ESLint / Vitest 等依赖
+npm run dev        # Vite 开发服务器（热更新）
+npm run lint       # ESLint 代码检查（含 .vue 模板）
+npm test           # Vitest 单元测试
 npm run build      # 生产构建：压缩 + content-hash 文件名，产出 dist/
+npm run preview    # 本地预览生产构建产物
 ```
 
 > 构建产物文件名带 content-hash，配合 `_headers` 的 `immutable` 缓存策略实现可靠的缓存更新，无需再手动维护 `?v=` 版本号。
