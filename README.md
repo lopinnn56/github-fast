@@ -110,21 +110,29 @@
 
 ---
 
-## 八、部署（Cloudflare Pages）
+## 八、开发与部署（Cloudflare Pages）
 
-本项目是纯静态站点（index.html + style.css + js/），可一键部署到 Cloudflare Pages。
+### 本地开发
 
-### 方式一：从 GitHub 仓库部署
+```bash
+npm install        # 安装 esbuild / eslint 等开发依赖
+npm run dev        # 监听模式，实时构建到 dist/（用任意静态服务器指向 dist/ 即可预览）
+npm run lint       # ESLint 代码检查
+npm run build      # 生产构建：压缩 + content-hash 文件名，产出 dist/
+```
 
-1. 将本项目推送到你的 GitHub 仓库；
-2. 登录 Cloudflare Dashboard 的 Workers & Pages，点击 Create 选择 Pages；
-3. 选择 Connect to Git，授权并选中你的仓库；
-4. 构建配置：Framework preset 选 None，Build command 留空，Build output directory 填 /（根目录）；
-5. 点击 Save and Deploy，等待部署完成即可获得 *.pages.dev 域名。
+> 构建产物文件名带 content-hash，配合 `_headers` 的 `immutable` 缓存策略实现可靠的缓存更新，无需再手动维护 `?v=` 版本号。
 
-### 方式二：使用 Wrangler CLI
+### 方式一：从 GitHub 仓库部署（推荐）
 
-安装 wrangler 后，在项目根目录执行：wrangler pages deploy ./ --project-name=github-accel （部署前先 wrangler login）。
+仓库已内置 `.github/workflows/deploy.yml`：推送到 main 分支后自动执行 lint + 构建，并将 `dist/` 部署到 Cloudflare Pages。只需在仓库 Secrets 中配置 `CLOUDFLARE_API_TOKEN` 与 `CLOUDFLARE_ACCOUNT_ID`。
+
+### 方式二：手动部署
+
+```bash
+npm install && npm run build
+wrangler pages deploy ./dist --project-name=github-accel   # 部署前先 wrangler login
+```
 
 ### 绑定自定义域名（可选）
 

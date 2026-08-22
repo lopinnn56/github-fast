@@ -99,6 +99,7 @@ function loadNodes() {
             if (p && Array.isArray(p.main)) {
                 mainNodes = p.main.filter(validNode);
                 pinnedNodes = Array.isArray(p.pinned) ? p.pinned.filter(validNode) : [];
+                purgeLegacyKeys();
                 return;
             }
         }
@@ -112,6 +113,9 @@ function loadNodes() {
             if (Array.isArray(p) && p.length) {
                 mainNodes = p.filter(validNode);
                 pinnedNodes = [];
+                // 迁移到 v3 后立即落盘并清理旧 key
+                saveNodes();
+                purgeLegacyKeys();
                 return;
             }
         }
@@ -120,6 +124,11 @@ function loadNodes() {
     }
     mainNodes = clone(DEFAULT_NODES);
     pinnedNodes = [];
+    purgeLegacyKeys();
+}
+
+function purgeLegacyKeys() {
+    try { localStorage.removeItem('gh_accel_nodes_v2'); } catch (e) { /* ignore */ }
 }
 
 function saveNodes() {

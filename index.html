@@ -21,10 +21,12 @@
     <meta name="twitter:title" content="GitHub 加速 | 镜像下载加速工具">
     <meta name="twitter:description" content="将 GitHub 链接转换为加速镜像，解决下载慢、克隆卡、Raw 打不开的问题。">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <!-- 字体改为 JS 非阻塞加载（见 ui.js loadWebFontsAsync）：
+         fonts.googleapis.com 在部分区域不可达，同步样式表会阻塞首屏渲染直到超时。
+         加载失败时自动回退系统字体栈。 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="style.css">
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -252,6 +254,6 @@
     <button id="backTop" class="back-top" type="button" hidden aria-label="返回顶部">↑</button>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-    <script type="module" src="js/main.js?v=10"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

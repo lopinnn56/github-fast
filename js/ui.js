@@ -32,18 +32,36 @@ function flashCopied(btn) {
 function fallbackCopy(text, btn) {
     const ta = document.createElement('textarea');
     ta.value = text;
+    ta.setAttribute('readonly', '');
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
     document.body.appendChild(ta);
-    ta.select();
+    // iOS Safari：非可编辑 textarea 需要 contentEditable + Range 选区才能选中
+    if (/ipad|iphone|ipod/i.test(navigator.userAgent)) {
+        ta.contentEditable = true;
+        ta.readOnly = true;
+        const range = document.createRange();
+        range.selectNodeContents(ta);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        ta.setSelectionRange(0, text.length);
+    } else {
+        ta.select();
+    }
+    let ok = false;
     try {
-        document.execCommand('copy');
-        toast('已复制');
-        flashCopied(btn);
+        ok = document.execCommand('copy');
     } catch (e) {
-        toast('复制失败');
+        ok = false;
     }
     document.body.removeChild(ta);
+    if (ok) {
+        toast('已复制');
+        flashCopied(btn);
+    } else {
+        toast('复制失败，请手动复制');
+    }
 }
 
 export function debounce(fn, ms) {
@@ -57,8 +75,30 @@ export function debounce(fn, ms) {
 export function initUx() {
     initReveal();
     initScrollFx();
+    loadWebFontsAsync();
     initSeg();
     window.addEventListener('resize', debounce(moveSeg, 120));
+    // 字体异步加载完成后文本宽度会变化，重算分段控件指示条位置
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+        document.fonts.ready.then(moveSeg).catch(function () { /* ignore */ });
+    }
+    window.addEventListener('load', moveSeg);
+}
+
+// Google Fonts 对大陆用户不可达：以非阻塞方式加载（不写入 HTML，避免 CSP 需要 unsafe-inline）。
+// 加载失败 / 超时自动留在 print 媒体上（等效禁用），页面始终使用系统字体回退。
+const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Noto+Serif+SC:wght@500;600&family=Inter:wght@400;500;600;700&display=swap';
+
+function loadWebFontsAsync() {
+    try {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = FONTS_HREF;
+        link.media = 'print';
+        link.onload = function () { link.media = 'all'; };
+        link.onerror = function () { link.remove(); };
+        document.head.appendChild(link);
+    } catch (e) { /* ignore */ }
 }
 
 const REVEAL_SELECTOR = '.section-head, .feature-card, .tool-panel, .nodes-card, .faq-item';

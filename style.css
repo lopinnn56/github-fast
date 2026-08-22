@@ -537,7 +537,14 @@ main > section + section { border-top: 1px solid var(--border); }
 .seg-btn.active { color: #fff; }
 
 .result-list { display: flex; flex-direction: column; gap: 14px; }
-.link-group { display: flex; flex-direction: column; gap: 12px; }
+.link-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* 批量转换时跳过视口外分组的布局与绘制，避免大 DOM 集卡顿 */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+}
 .group-head {
     display: flex;
     align-items: center;
@@ -654,6 +661,8 @@ main > section + section { border-top: 1px solid var(--border); }
 }
 .node-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .node-row {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 52px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -912,6 +921,8 @@ body::after {
 @media (max-width: 900px) {
     .feature-grid { grid-template-columns: 1fr; max-width: 560px; }
     .footer-grid { grid-template-columns: 1fr 1fr; }
+    /* 移动端 GPU 弱，大尺寸 blur 动画代价高：直接关闭背景光斑 */
+    .bg-blobs { display: none; }
 }
 @media (max-width: 560px) {
     .hero { padding: 72px 20px 64px; }
@@ -929,7 +940,6 @@ body::after {
         backdrop-filter: blur(10px) saturate(var(--glass-sat));
         -webkit-backdrop-filter: blur(10px) saturate(var(--glass-sat));
     }
-    .bg-blobs span:nth-child(3) { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

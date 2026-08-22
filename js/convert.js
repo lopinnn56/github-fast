@@ -34,9 +34,11 @@ export function detectType(url) {
         const p = u.pathname.toLowerCase();
         if (h === 'raw.githubusercontent.com' || h === 'raw.github.com' || h === 'gist.githubusercontent.com') return 'raw';
         if (/^gist\./.test(h)) return 'gist';
-        // blob 优先于 .zip，否则仓库里的 .zip 文件会被误判为 release
+        // blob 优先于归档判断，否则仓库里的 .zip 文件会被误判为 release
         if (/\/blob\//.test(p)) return 'file';
-        if (/\/releases\/|\/tags\/|\/archive\/|\.zip($|\?)/.test(p)) return 'release';
+        if (/\/releases\/|\/tags\/|\/archive\//.test(p)) return 'release';
+        // 注：对 pathname 匹配，query 不参与；常见归档后缀均视为 release 下载
+        if (/\.(zip|tar|gz|tgz|bz2|xz|rar|7z|apk|dmg|exe|deb|rpm|appimage)$/i.test(p)) return 'release';
         return 'repo';
     } catch (e) {
         return 'repo';
@@ -63,6 +65,9 @@ export function buildAccelUrl(input, node) {
 export function hostOf(prefix) {
     return prefix.replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
+
+// 单次批量转换的上限，防止粘贴超大文本时 DOM 爆炸
+export const MAX_BATCH = 100;
 
 export function parseBatch(text) {
     const seen = new Set();
