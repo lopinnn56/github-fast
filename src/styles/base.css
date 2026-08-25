@@ -405,6 +405,17 @@ main > section + section { border-top: 1px solid var(--border); }
 .back-top:active { transform: translateY(0); }
 
 /* ---------- Scroll reveal ---------- */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 .reveal {
     opacity: 0;
     transform: translateY(18px);

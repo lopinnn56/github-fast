@@ -6,7 +6,7 @@ import { useNodes } from '../composables/useNodes.js';
 import { useSpeedTest } from '../composables/useSpeedTest.js';
 import { useToast } from '../composables/useToast.js';
 import { copyText } from '../lib/clipboard.js';
-import { buildAccelUrl, hostOf } from '../lib/convert.js';
+import { buildAccelUrl, getNodeId, hostOf } from '../lib/convert.js';
 
 const props = defineProps({
     node: { type: Object, required: true },
@@ -32,7 +32,7 @@ function copyHome(e) {
 }
 
 // 测速结果响应式查询；undefined 表示未测速
-const result = computed(function () { return results[props.node.prefix]; });
+const result = computed(function () { return results[getNodeId(props.node)]; });
 
 // 结果更新时重放 bump 动画
 const justUpdated = ref(false);
@@ -60,7 +60,7 @@ const badgeTitle = computed(function () {
 });
 
 const hostLine = computed(function () {
-    return hostOf(props.node.prefix) + ' · ' + (props.node.mode === 'prefix' ? 'prefix' : 'replace');
+    return hostOf(props.node.prefix) + ' · ' + (props.node.mode === 'replace' ? 'replace' : 'prefix');
 });
 
 const isFirst = computed(function () { return props.index === 0; });

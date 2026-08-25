@@ -1,4 +1,5 @@
 import { reactive } from 'vue';
+import { buildAccelUrl, getNodeId, normalizeNode } from '../lib/convert.js';
 
 const SPEED_TIMEOUT = 3500;
 const CACHE_KEY = 'gh_accel_speed';
@@ -22,8 +23,8 @@ function persistCache() {
     } catch { /* 隐私模式：仅内存缓存 */ }
 }
 
-function cachedResult(prefix) {
-    const c = cache[prefix];
+function cachedResult(id) {
+    const c = cache[id];
     if (c && Date.now() - c.ts < CACHE_TTL) return c;
     return null;
 }
@@ -48,17 +49,21 @@ function probeOnce(url, cors, timeout) {
     });
 }
 
-async function probeNode(node) {
-    const hit = cachedResult(node.prefix);
+async function probeNode(rawNode) {
+    const node = normalizeNode(rawNode);
+    if (!node) return { ok: false, ms: SPEED_TIMEOUT, ts: Date.now() };
+    const id = getNodeId(node);
+    const hit = cachedResult(id);
     if (hit) return hit;
     // cache-busting：避免镜像 / CDN 缓存命中导致延迟虚低
-    const bust = node.prefix + 'https://github.com/favicon.ico?_ghfast=' +
-        Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const probeUrl = new URL(buildAccelUrl('https://github.com/favicon.ico', node));
+    probeUrl.searchParams.set('_ghfast', Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    const bust = probeUrl.href;
     // 第一次：CORS 探测拿真实状态；失败退回 no-cors 仅测连通性
     let r = await probeOnce(bust, true, SPEED_TIMEOUT);
     if (!r) r = await probeOnce(bust, false, SPEED_TIMEOUT);
     const result = r ? { ok: r.ok, ms: r.ms, ts: Date.now() } : { ok: false, ms: SPEED_TIMEOUT, ts: Date.now() };
-    cache[node.prefix] = result;
+    cache[id] = result;
     return result;
 }
 
@@ -98,8 +103,9 @@ export function useSpeedTest() {
                     } catch {
                         r = { ok: false, ms: SPEED_TIMEOUT, ts: Date.now() };
                     }
-                    results[node.prefix] = r;
-                    cache[node.prefix] = cache[node.prefix] || Object.assign({ ts: Date.now() }, r);
+                    const id = getNodeId(node);
+                    results[id] = r;
+                    cache[id] = cache[id] || Object.assign({ ts: Date.now() }, r);
                     if (r.ok) okCount++;
                     else failedCount++;
                     progress.done++;

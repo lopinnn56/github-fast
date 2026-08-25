@@ -120,6 +120,7 @@
 .seg-btn.active { color: #fff; }
 
 .result-list { display: flex; flex-direction: column; gap: 14px; }
+.load-more { display: flex; justify-content: center; margin-top: 16px; }
 .link-group {
     display: flex;
     flex-direction: column;

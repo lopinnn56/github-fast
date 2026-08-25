@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeInput, isGitHubUrl, detectType, buildAccelUrl, hostOf, parseBatch, buildCloneCommand, MAX_BATCH } from '../src/lib/convert.js';
+import {
+    normalizeInput,
+    isGitHubUrl,
+    detectType,
+    normalizeNodePrefix,
+    normalizeNode,
+    getNodeId,
+    buildAccelUrl,
+    hostOf,
+    parseBatch,
+    parseBatchWithStats,
+    buildCloneCommand,
+    MAX_BATCH
+} from '../src/lib/convert.js';
 
 describe('normalizeInput', () => {
     const cases = [
@@ -85,6 +98,37 @@ describe('buildAccelUrl', () => {
     });
 });
 
+describe('节点前缀校验', () => {
+    it('规范化 HTTP(S) 前缀并保留自定义路径', () => {
+        expect(normalizeNodePrefix('https://mirror.example/base//')).toBe('https://mirror.example/base/');
+        expect(normalizeNodePrefix('http://127.0.0.1:8080')).toBe('http://127.0.0.1:8080/');
+    });
+
+    it('拒绝凭据、查询串、哈希和非 HTTP 协议', () => {
+        const bad = [
+            'https://user:pass@mirror.example/',
+            'https://mirror.example/?x=1',
+            'https://mirror.example/#h',
+            'ftp://mirror.example/',
+            'javascript:alert(1)',
+            ''
+        ];
+        bad.forEach((prefix) => expect(normalizeNodePrefix(prefix)).toBeNull());
+    });
+
+    it('规范化节点模式并生成稳定 ID', () => {
+        expect(normalizeNode({ name: ' mirror ', prefix: 'https://mirror.example', mode: 'unknown' }))
+            .toEqual({ name: 'mirror', prefix: 'https://mirror.example/', mode: 'prefix' });
+        expect(getNodeId({ name: 'a', prefix: 'https://a.example/', mode: 'replace' })).toBe('replace:https://a.example/');
+        expect(normalizeNode({ name: '', prefix: 'https://a.example/' })).toBeNull();
+    });
+
+    it('坏前缀不会拼出加速链接', () => {
+        const input = 'https://github.com/u/r';
+        expect(buildAccelUrl(input, { prefix: 'https://mirror.example/?x=1' })).toBe(input);
+    });
+});
+
 describe('hostOf', () => {
     it('剥离协议与尾部斜杠', () => {
         expect(hostOf('https://ghproxy.net/')).toBe('ghproxy.net');
@@ -103,5 +147,25 @@ describe('parseBatch 批量解析', () => {
     });
     it('MAX_BATCH 常量保持 100', () => {
         expect(MAX_BATCH).toBe(100);
+    });
+
+    it('统计有效数量并在限制处截断输出', () => {
+        const text = [
+            'github.com/a/1',
+            'not a url',
+            'github.com/a/1',
+            'example.com/x',
+            'github.com/a/2',
+            '',
+            'github.com/a/3',
+            'github.com/a/4'
+        ].join('\n');
+        expect(parseBatchWithStats(text, 2, isGitHubUrl)).toEqual({
+            urls: ['https://github.com/a/1', 'https://github.com/a/2'],
+            normalizedTotal: 7,
+            acceptedTotal: 4,
+            invalidCount: 1,
+            filteredCount: 2
+        });
     });
 });

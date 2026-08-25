@@ -2,6 +2,8 @@
  * 节点数据核心逻辑 —— 与 Vue 解耦，可在 Node 环境直接单测。
  * 存储格式：v3 = { main: Node[], pinned: Node[] }（当前），v2 = Node[]（历史）。
  */
+import { getNodeId, normalizeNode } from './convert.js';
+
 export const DEFAULT_NODES = [
     { name: 'ghproxy.net', prefix: 'https://ghproxy.net/', mode: 'prefix' },
     { name: 'gh.dpik.top', prefix: 'https://gh.dpik.top/', mode: 'prefix' },
@@ -88,11 +90,21 @@ export const LEGACY_KEYS = ['gh_accel_nodes_v2'];
 
 /** 校验节点结构，过滤损坏数据（避免 undefined prefix 产生坏链接） */
 export function validNode(n) {
-    return !!n && typeof n === 'object' && typeof n.prefix === 'string' && /^https?:\/\//i.test(n.prefix) && typeof n.name === 'string';
+    return normalizeNode(n) !== null;
 }
 
-function clone(list) {
-    return JSON.parse(JSON.stringify(list));
+function uniqueNodes(list) {
+    const seen = new Set();
+    const nodes = [];
+    list.forEach(function (raw) {
+        const node = normalizeNode(raw);
+        const id = getNodeId(node);
+        if (id && !seen.has(id)) {
+            seen.add(id);
+            nodes.push(node);
+        }
+    });
+    return nodes;
 }
 
 /**
@@ -108,9 +120,20 @@ export function loadNodeState(storage) {
             if (raw) {
                 const p = JSON.parse(raw);
                 if (p && Array.isArray(p.main)) {
+                    const pinned = Array.isArray(p.pinned) ? uniqueNodes(p.pinned) : [];
+                    const seen = new Set(pinned.map(getNodeId));
+                    const main = [];
+                    p.main.forEach(function (raw) {
+                        const node = normalizeNode(raw);
+                        const id = getNodeId(node);
+                        if (id && !seen.has(id)) {
+                            seen.add(id);
+                            main.push(node);
+                        }
+                    });
                     return {
-                        main: p.main.filter(validNode),
-                        pinned: Array.isArray(p.pinned) ? p.pinned.filter(validNode) : [],
+                        main,
+                        pinned,
                         migrated: false
                     };
                 }
@@ -122,12 +145,12 @@ export function loadNodeState(storage) {
                 const p = JSON.parse(raw2);
                 if (Array.isArray(p) && p.length) {
                     // v2 -> v3：旧数组即主列表，置顶队列为空；由调用方负责落盘并清理旧 key
-                    return { main: p.filter(validNode), pinned: [], migrated: true };
+                    return { main: uniqueNodes(p), pinned: [], migrated: true };
                 }
             }
         } catch { /* fallthrough */ }
     }
-    return { main: clone(DEFAULT_NODES), pinned: [], migrated: false };
+    return { main: uniqueNodes(DEFAULT_NODES), pinned: [], migrated: false };
 }
 
 /**

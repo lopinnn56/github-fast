@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue';
-import { parseBatch, isGitHubUrl, MAX_BATCH } from '../lib/convert.js';
+import { parseBatchWithStats, isGitHubUrl, MAX_BATCH } from '../lib/convert.js';
 import { syncUrlParam, readUrlParams } from '../lib/url-state.js';
 import { useToast } from './useToast.js';
 
@@ -7,6 +7,16 @@ import { useToast } from './useToast.js';
 const links = ref([]);
 const rawText = ref('');
 const { showToast } = useToast();
+
+function notifySkipped(batch) {
+    const overflow = batch.acceptedTotal - batch.urls.length;
+    const skipped = batch.invalidCount + batch.filteredCount;
+    if (overflow) {
+        showToast('一次最多转换 ' + MAX_BATCH + ' 个链接，已忽略后 ' + overflow + ' 个');
+    } else if (skipped) {
+        showToast('已跳过 ' + skipped + ' 个无效链接');
+    }
+}
 
 // 结果变更（转换 / 删除分组 / 清空）时同步地址栏 ?url= 参数
 watch(links, function (l) { syncUrlParam(l); });
@@ -16,24 +26,19 @@ watch(links, function (l) { syncUrlParam(l); });
  * 全部提示语与旧版一致。
  */
 function doConvert() {
-    const all = parseBatch(rawText.value);
-    if (!all.length) {
+    const batch = parseBatchWithStats(rawText.value, MAX_BATCH, isGitHubUrl);
+    if (!batch.normalizedTotal) {
         showToast('请输入链接');
         return false;
     }
-    let valid = all.filter(isGitHubUrl);
+    const valid = batch.urls;
     if (!valid.length) {
         // 清掉旧结果与地址栏参数，避免无效输入后仍残留上次的结果
         links.value = [];
         showToast('请输入有效的 GitHub 链接');
         return false;
     }
-    if (valid.length > MAX_BATCH) {
-        showToast('一次最多转换 ' + MAX_BATCH + ' 个链接，已忽略后 ' + (valid.length - MAX_BATCH) + ' 个');
-        valid = valid.slice(0, MAX_BATCH);
-    } else if (valid.length < all.length) {
-        showToast('已跳过 ' + (all.length - valid.length) + ' 个无效链接');
-    }
+    notifySkipped(batch);
     links.value = valid;
     return true;
 }
@@ -51,10 +56,16 @@ function removeGroup(url) {
 
 /** 启动时读取 ?url= 参数：回填输入框并直接出结果 */
 function applyUrlParams() {
-    const urls = readUrlParams();
-    if (!urls.length) return;
-    rawText.value = urls.join('\n');
-    links.value = urls.filter(isGitHubUrl).slice(0, MAX_BATCH);
+    const params = readUrlParams();
+    if (!params.length) return;
+    const batch = parseBatchWithStats(params.join('\n'), MAX_BATCH, isGitHubUrl);
+    rawText.value = batch.urls.join('\n');
+    links.value = batch.urls;
+    if (!batch.urls.length) {
+        showToast('请输入有效的 GitHub 链接');
+        return;
+    }
+    notifySkipped(batch);
 }
 
 export function useConverter() {

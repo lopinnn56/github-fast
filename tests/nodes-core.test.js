@@ -60,6 +60,24 @@ describe('loadNodeState 回退链', () => {
         const st = mockStorage({ [STORAGE_KEY]: '{"oops":true}' });
         expect(loadNodeState(st).main).toEqual(DEFAULT_NODES);
     });
+
+    it('跨置顶和普通列表去除重复节点', () => {
+        const st = mockStorage({
+            [STORAGE_KEY]: JSON.stringify({
+                main: [NODE_A, NODE_A, NODE_B],
+                pinned: [NODE_B, NODE_B]
+            })
+        });
+        const state = loadNodeState(st);
+        expect(state.pinned).toEqual([NODE_B]);
+        expect(state.main).toEqual([NODE_A]);
+    });
+
+    it('缺失 mode 的旧节点按 prefix 模式加载', () => {
+        const legacyNode = { name: 'legacy', prefix: 'https://legacy.example' };
+        const st = mockStorage({ [STORAGE_KEY]: JSON.stringify({ main: [legacyNode], pinned: [] }) });
+        expect(loadNodeState(st).main).toEqual([{ ...legacyNode, prefix: 'https://legacy.example/', mode: 'prefix' }]);
+    });
 });
 
 describe('saveNodeState 落盘与旧 key 清理', () => {

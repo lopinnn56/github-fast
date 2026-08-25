@@ -6,6 +6,48 @@
 const GITHUB_HOST_NO_PROTO = /^(?:www\.)?(?:github\.com|gist\.github\.com|(?:[\w-]+\.)?githubusercontent\.com|(?:[\w-]+\.)?githubassets\.com)(?:\/|$)/i;
 
 /**
+ * 解析并规范化加速节点前缀。只接受无凭据、查询串和哈希的 HTTP(S) 地址。
+ * @param {string} value 节点前缀
+ * @returns {string|null} 以斜杠结尾的前缀；无效时返回 null
+ */
+export function normalizeNodePrefix(value) {
+    if (typeof value !== 'string' || !value || value.length > 2048) return null;
+    try {
+        const url = new URL(value);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+        if (url.username || url.password || url.search || url.hash) return null;
+        const path = url.pathname === '/' ? '/' : url.pathname.replace(/\/+$/, '/');
+        return url.origin + path;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * 校验并规范化用户自定义节点。
+ * @param {{name:string,prefix:string,mode?:string}} node 待校验节点
+ * @returns {{name:string,prefix:string,mode:'prefix'|'replace'}|null} 规范化节点
+ */
+export function normalizeNode(node) {
+    if (!node || typeof node !== 'object') return null;
+    const prefix = normalizeNodePrefix(node.prefix);
+    if (!prefix) return null;
+    const name = typeof node.name === 'string' ? node.name.trim() : '';
+    if (!name || name.length > 120) return null;
+    return { name, prefix, mode: node.mode === 'replace' ? 'replace' : 'prefix' };
+}
+
+/**
+ * 生成跨列表稳定的节点标识，用于结果映射和测速缓存。
+ * @param {{prefix:string,mode?:string}} node 节点数据
+ * @returns {string} 稳定 ID；无效节点返回空串
+ */
+export function getNodeId(node) {
+    const normalized = normalizeNode(node);
+    return normalized ? normalized.mode + ':' + normalized.prefix : '';
+}
+
+/**
  * 规范化用户输入：补全协议、归一 www 前缀、支持 user/repo 简写。
  * @param {string} raw 原始输入（可为空）
  * @returns {string} 规范化后的 URL；无法识别时返回空串
@@ -75,16 +117,18 @@ export const TYPE_LABEL = { raw: 'RAW', release: 'RELEASE', file: 'FILE', repo: 
 export function buildAccelUrl(input, node) {
     // 防御：损坏的节点数据（缺失 prefix）不应产出 undefinedxxx 链接
     if (!node || typeof node.prefix !== 'string' || !node.prefix) return input;
+    const prefix = normalizeNodePrefix(node.prefix);
+    if (!prefix) return input;
     if (node.mode === 'replace') {
         try {
             const u = new URL(input);
-            const host = node.prefix.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-            return u.protocol + '//' + host + u.pathname + u.search + u.hash;
+            const replacementBase = prefix.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+            return u.protocol + '//' + replacementBase + u.pathname + u.search + u.hash;
         } catch {
             // fall through to prefix mode
         }
     }
-    return node.prefix + input.replace(/^https?:\/\//, '');
+    return prefix + input.replace(/^https?:\/\//, '');
 }
 
 /**
@@ -113,14 +157,37 @@ export const MAX_BATCH = 100;
  * @param {string} text
  * @returns {string[]}
  */
-export function parseBatch(text) {
+export function parseBatchWithStats(text, limit = Number.MAX_SAFE_INTEGER, filter = null) {
     const seen = new Set();
     const out = [];
+    let normalizedTotal = 0;
+    let acceptedTotal = 0;
+    let invalidCount = 0;
+    let filteredCount = 0;
     String(text || '').split(/\r?\n/).forEach(function (line) {
         const url = normalizeInput(line);
-        if (!url || seen.has(url)) return;
+        if (!url) {
+            invalidCount++;
+            return;
+        }
+        normalizedTotal++;
+        if (seen.has(url)) return;
         seen.add(url);
-        out.push(url);
+        if (filter && !filter(url)) {
+            filteredCount++;
+            return;
+        }
+        acceptedTotal++;
+        if (out.length < limit) out.push(url);
     });
-    return out;
+    return { urls: out, normalizedTotal, acceptedTotal, invalidCount, filteredCount };
+}
+
+/**
+ * 兼容旧调用的批量解析入口。
+ * @param {string} text 输入文本
+ * @returns {string[]} 规范化后的 URL 列表
+ */
+export function parseBatch(text) {
+    return parseBatchWithStats(text).urls;
 }
