@@ -10,7 +10,7 @@ import { copyText } from '../lib/clipboard.js';
 import { detectType, TYPE_LABEL, buildAccelUrl, buildCloneCommand } from '../lib/convert.js';
 import ModeSwitch from './ModeSwitch.vue';
 
-const { links, removeGroup } = useConverter();
+const { links, removeGroup, convertEpoch } = useConverter();
 const nodesStore = useNodes();
 const { isClone } = useMode();
 const { showToast } = useToast();
@@ -71,7 +71,8 @@ const resultStatus = computed(function () {
     return '已转换 ' + links.value.length + ' 个链接，显示 ' + visibleGroupList.value.length + ' / ' + groups.value.length + ' 组';
 });
 
-watch(links, function () {
+// 仅在新转换发生时重置分页；删除分组（removeGroup 只改 links）不收回已展开的分页
+watch(convertEpoch, function () {
     visibleGroups.value = RESULT_PAGE_SIZE;
 });
 

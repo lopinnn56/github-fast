@@ -105,7 +105,6 @@ export function useSpeedTest() {
                     }
                     const id = getNodeId(node);
                     results[id] = r;
-                    cache[id] = cache[id] || Object.assign({ ts: Date.now() }, r);
                     if (r.ok) okCount++;
                     else failedCount++;
                     progress.done++;

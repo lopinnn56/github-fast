@@ -6,7 +6,7 @@ import { onMounted, onBeforeUnmount, ref } from 'vue';
 const bodyEl = ref(null);
 
 const LINES = [
-    { cls: 't-cmd', text: 'git clone https://github.com/lopinnn/github-fast', type: true },
+    { cls: 't-cmd', text: 'git clone https://github.com/lopinnn56/github-fast', type: true },
     { cls: 't-dim', text: "Cloning into 'github-fast'..." },
     { cls: 't-dim', text: '正在通过 ghproxy.net 镜像加速...' },
     { cls: 't-out', text: 'remote: Counting objects: 128, done.' },

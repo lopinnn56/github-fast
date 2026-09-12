@@ -91,10 +91,11 @@
 ## 六、技术说明
 
 - **Vue 3 + Vite**：单页应用，组件化开发；生产构建产物为纯静态文件（`dist/`），可托管在任意静态服务器 / Cloudflare Pages；
-- **目录结构**：`src/lib/`（纯函数库：链接解析、节点存储、剪贴板）、`src/composables/`（响应式状态：节点仓库、测速、模式、Toast）、`src/components/`（UI 组件）、`tests/`（Vitest 单元测试）；
+- **目录结构**：`src/lib/`（纯函数库：链接解析、节点存储、剪贴板）、`src/composables/`（响应式状态：节点仓库、测速、模式、Toast）、`src/components/`（UI 组件）、`tests/`（单元测试，Node 内置 `node:test` 运行器，无需安装测试框架）；
 - **隐私友好**：不发送你的链接到任何服务器（节点测速为浏览器直连节点本身），不记录、不缓存；
 - **本地拼接**：所有加速 URL 均在浏览器端通过字符串拼接生成；
 - **节点持久化**：你的节点增删 / 排序保存在浏览器 `localStorage`（自动兼容并迁移 v2 旧数据）；测速结果缓存在 `sessionStorage`（5 分钟）。
+- **http 节点限制**：出于站点 CSP（`connect-src https:`）安全策略，`http://` 前缀的自定义节点**只能参与链接拼接，无法被浏览器测速**（探测请求会被 CSP 阻断并标记 ✕）；自建加速节点建议启用 HTTPS。
 
 ---
 
@@ -115,10 +116,10 @@
 ### 本地开发
 
 ```bash
-npm install        # 安装 Vue / Vite / ESLint / Vitest 等依赖
+npm install        # 安装 Vue / Vite / ESLint 等依赖
 npm run dev        # Vite 开发服务器（热更新）
 npm run lint       # ESLint 代码检查（含 .vue 模板）
-npm test           # Vitest 单元测试
+npm test           # 单元测试：Node 内置测试运行器（node --test，零额外依赖）
 npm run build      # 生产构建：压缩 + content-hash 文件名，产出 dist/
 npm run preview    # 本地预览生产构建产物
 ```

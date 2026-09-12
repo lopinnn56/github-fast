@@ -6,6 +6,9 @@ import { useToast } from './useToast.js';
 // 模块级单例：转换结果跨组件共享（输入面板 ↔ 结果列表）
 const links = ref([]);
 const rawText = ref('');
+// 转换纪元：仅在「产生新结果」（doConvert / applyUrlParams）时自增。
+// 结果区据此重置分页——删除分组（removeGroup）不应把用户展开的分页收回去。
+const convertEpoch = ref(0);
 const { showToast } = useToast();
 
 function notifySkipped(batch) {
@@ -40,6 +43,7 @@ function doConvert() {
     }
     notifySkipped(batch);
     links.value = valid;
+    convertEpoch.value++;
     return true;
 }
 
@@ -66,12 +70,14 @@ function applyUrlParams() {
         return;
     }
     notifySkipped(batch);
+    convertEpoch.value++;
 }
 
 export function useConverter() {
     return {
         links,
         rawText,
+        convertEpoch,
         hasLinks: () => links.value.length > 0,
         doConvert,
         clearAll,

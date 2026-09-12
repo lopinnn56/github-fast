@@ -2,8 +2,10 @@
  * 链接识别与加速地址拼装 —— 纯函数库，无 DOM / 存储副作用，可直接单测。
  */
 
-// 允许省略协议直接书写的 GitHub 系域名（覆盖 www./gist./raw. 等子域）
-const GITHUB_HOST_NO_PROTO = /^(?:www\.)?(?:github\.com|gist\.github\.com|(?:[\w-]+\.)?githubusercontent\.com|(?:[\w-]+\.)?githubassets\.com)(?:\/|$)/i;
+// 允许省略协议直接书写的 GitHub 系域名。
+// github.com 及其任意子域（www./gist./codeload./api. 等）均接受；
+// 尾部 (?:\/|$) 锚定保证 github.com.evil.com 这类仿冒域不命中。
+const GITHUB_HOST_NO_PROTO = /^(?:[a-z0-9-]+\.)*(?:github\.com|(?:[\w-]+\.)?githubusercontent\.com|(?:[\w-]+\.)?githubassets\.com)(?:\/|$)/i;
 
 /**
  * 解析并规范化加速节点前缀。只接受无凭据、查询串和哈希的 HTTP(S) 地址。

@@ -63,7 +63,7 @@ watch(isMulti, function (multi) {
         <textarea id="inputUrls" ref="taEl" v-model="rawText" class="multi-input" rows="3" :hidden="!isMulti"
                   placeholder="一次粘贴多个链接，每行一个，Ctrl+Enter 转换"
                   autocomplete="off" spellcheck="false"
-                  @input="onLive; autoResize()" @keydown.enter.ctrl.exact.prevent="doConvert"
+                  @input="onLive(); autoResize()" @keydown.enter.ctrl.exact.prevent="doConvert"
                   @keydown.enter.meta.exact.prevent="doConvert"></textarea>
         <button class="btn btn-primary" type="button" @click="doConvert">转换</button>
     </div>

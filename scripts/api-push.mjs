@@ -15,15 +15,17 @@ if (!process.env.GH || !repo || !branch || !files.length) {
 const h = { Authorization: 'Bearer ' + process.env.GH, 'User-Agent': 'upload-script', Accept: 'application/vnd.github+json' };
 const api = 'https://api.github.com/repos/' + repo;
 const J = r => r.json();
+// GitHub API 偶发挂起时避免脚本永久阻塞
+const TIMEOUT = { signal: AbortSignal.timeout(30000) };
 
 async function main() {
     // 1. 当前分支头
-    const ref = await J(await fetch(`${api}/git/ref/heads/${branch}`, { headers: h }));
+    const ref = await J(await fetch(`${api}/git/ref/heads/${branch}`, { headers: h, ...TIMEOUT }));
     if (!ref.object) throw new Error('获取分支失败: ' + JSON.stringify(ref));
     const baseSha = ref.object.sha;
 
     // 2. 基础树
-    const base = await J(await fetch(`${api}/git/commits/${baseSha}`, { headers: h }));
+    const base = await J(await fetch(`${api}/git/commits/${baseSha}`, { headers: h, ...TIMEOUT }));
     const baseTree = base.tree.sha;
 
     // 3. 逐个创建 blob
@@ -31,7 +33,7 @@ async function main() {
     for (const f of files) {
         const content = await import('node:fs/promises').then(fs => fs.readFile(f));
         const b = await J(await fetch(`${api}/git/blobs`, {
-            method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+            method: 'POST', headers: { ...h, 'Content-Type': 'application/json' }, ...TIMEOUT,
             body: JSON.stringify({ content: content.toString('base64'), encoding: 'base64' })
         }));
         if (!b.sha) throw new Error('blob 失败 ' + f + ': ' + JSON.stringify(b));
@@ -41,21 +43,21 @@ async function main() {
 
     // 4. 新树
     const nt = await J(await fetch(`${api}/git/trees`, {
-        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' }, ...TIMEOUT,
         body: JSON.stringify({ base_tree: baseTree, tree })
     }));
     if (!nt.sha) throw new Error('tree 失败: ' + JSON.stringify(nt));
 
     // 5. 提交
     const c = await J(await fetch(`${api}/git/commits`, {
-        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+        method: 'POST', headers: { ...h, 'Content-Type': 'application/json' }, ...TIMEOUT,
         body: JSON.stringify({ message: msg, tree: nt.sha, parents: [baseSha] })
     }));
     if (!c.sha) throw new Error('commit 失败: ' + JSON.stringify(c));
 
     // 6. 更新分支
     const u = await fetch(`${api}/git/refs/heads/${branch}`, {
-        method: 'PATCH', headers: { ...h, 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: { ...h, 'Content-Type': 'application/json' }, ...TIMEOUT,
         body: JSON.stringify({ sha: c.sha, force: false })
     });
     const ur = await J(u);

@@ -1,12 +1,15 @@
 <script setup>
 // 链接 / Clone 模式分段控件：滑动指示条随选中项移动。
-// 指示条位置在挂载、模式切换、窗口尺寸变化、字体加载完成后重算。
+// 指示条位置在挂载、模式切换、窗口尺寸变化、容器显隐变化、字体加载完成后重算。
+// 注意：本组件挂载在 .results（初始 display:none）内，首次测量时尺寸为 0；
+// 必须用 ResizeObserver 才能在结果区显示时重测，否则指示条不可见（BUG-2）。
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { useMode } from '../composables/useMode.js';
 import { debounce } from '../lib/ui-fx.js';
 
 const { mode, setMode } = useMode();
 
+const segEl = ref(null);
 const btnLink = ref(null);
 const btnClone = ref(null);
 const ind = ref({ left: '0px', width: '0px' });
@@ -15,6 +18,8 @@ const ready = ref(false);
 function measure() {
     const el = mode.value === 'clone' ? btnClone.value : btnLink.value;
     if (!el) return;
+    // 隐藏状态（display:none）下尺寸为 0，不标记 ready，等可见后由 RO 重测
+    if (el.offsetWidth === 0) return;
     ind.value = { left: el.offsetLeft + 'px', width: el.offsetWidth + 'px' };
     ready.value = true;
 }
@@ -28,23 +33,30 @@ const onResize = debounce(measure, 120);
 
 watch(mode, function () { nextTick(measure); });
 
+let ro = null;
+
 onMounted(function () {
     measure();
+    // 容器从 display:none 变为可见（首次出结果）时尺寸从 0 变化，在此重测指示条
+    if (typeof ResizeObserver !== 'undefined' && segEl.value) {
+        ro = new ResizeObserver(function () { measure(); });
+        ro.observe(segEl.value);
+    }
     window.addEventListener('resize', onResize);
     // 字体异步加载完成后文本宽度会变化，重算指示条位置
     if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
         document.fonts.ready.then(measure).catch(function () { /* ignore */ });
     }
-    window.addEventListener('load', measure);
 });
 
 onBeforeUnmount(function () {
+    if (ro) ro.disconnect();
     window.removeEventListener('resize', onResize);
 });
 </script>
 
 <template>
-    <div class="seg" role="group" aria-label="显示模式">
+    <div ref="segEl" class="seg" role="group" aria-label="显示模式">
         <span class="seg-ind" aria-hidden="true" :style="indStyle"></span>
         <button ref="btnLink" type="button" class="seg-btn" :class="{ active: mode === 'link' }"
                 :aria-pressed="String(mode === 'link')" @click="setMode('link')">链接模式</button>
