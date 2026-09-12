@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import { useNodes } from '../composables/useNodes.js';
 import { useSpeedTest } from '../composables/useSpeedTest.js';
 import { useToast } from '../composables/useToast.js';
+import { getNodeId } from '../lib/convert.js';
 import NodeRow from './NodeRow.vue';
 
 const { main, pinned, total, reorderMain, reorderPinned, reset } = useNodes();
@@ -75,12 +76,12 @@ const countLine = computed(function () {
         <span class="pinned-count">{{ pinned.length }} 个</span>
     </div>
     <ul class="node-list pinned-list">
-        <NodeRow v-for="(n, i) in pinned" :key="n.prefix" :node="n" :index="i"
+        <NodeRow v-for="(n, i) in pinned" :key="getNodeId(n)" :node="n" :index="i"
                  list-type="pinned" :dragging="isDragging(i, 'pinned')"
                  @drag-start="onDragStart('pinned', i)" @drag-end="onDragEnd" @drop-row="onDropRow('pinned', i)" />
     </ul>
     <ul class="node-list">
-        <NodeRow v-for="(n, i) in main" :key="n.prefix" :node="n" :index="i"
+        <NodeRow v-for="(n, i) in main" :key="getNodeId(n)" :node="n" :index="i"
                  list-type="main" :dragging="isDragging(i, 'main')"
                  @drag-start="onDragStart('main', i)" @drag-end="onDragEnd" @drop-row="onDropRow('main', i)" />
     </ul>

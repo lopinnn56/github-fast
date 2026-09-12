@@ -60,14 +60,14 @@ export function normalizeInput(raw) {
     if (!/^https?:\/\//i.test(s)) {
         if (GITHUB_HOST_NO_PROTO.test(s)) {
             s = 'https://' + s;
-            // www.github.com -> github.com（镜像节点通常只接受裸域名）
-            s = s.replace(/^https?:\/\/www\.github\.com\//i, 'https://github.com/');
         } else if (/^[\w-]+\/[\w.-]+/.test(s)) {
             // user/repo 简写：GitHub 用户名/组织名不含点号，含点号的一律不当作简写，
             // 避免 github.com.evil.com/x 之类被拼成坏链接
             s = 'https://github.com/' + s.replace(/^\/+/, '');
         }
     }
+    // www.github.com -> github.com（镜像节点通常只接受裸域名）
+    s = s.replace(/^https?:\/\/www\.github\.com(?=\/|$)/i, 'https://github.com');
     return s;
 }
 
@@ -123,14 +123,23 @@ export function buildAccelUrl(input, node) {
     if (!prefix) return input;
     if (node.mode === 'replace') {
         try {
-            const u = new URL(input);
-            const replacementBase = prefix.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-            return u.protocol + '//' + replacementBase + u.pathname + u.search + u.hash;
+            const target = new URL(input);
+            const replacement = new URL(prefix);
+            target.protocol = replacement.protocol;
+            target.host = replacement.host;
+            target.pathname = joinPaths(replacement.pathname, target.pathname);
+            return target.href;
         } catch {
             // fall through to prefix mode
         }
     }
     return prefix + input.replace(/^https?:\/\//, '');
+}
+
+function joinPaths(base, target) {
+    const left = base.replace(/\/+$/, '');
+    const right = target.replace(/^\/+/, '');
+    return left ? left + '/' + right : '/' + right;
 }
 
 /**

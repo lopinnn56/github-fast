@@ -7,7 +7,7 @@ import { useNodes } from '../composables/useNodes.js';
 import { useMode } from '../composables/useMode.js';
 import { useToast } from '../composables/useToast.js';
 import { copyText } from '../lib/clipboard.js';
-import { detectType, TYPE_LABEL, buildAccelUrl, buildCloneCommand } from '../lib/convert.js';
+import { detectType, TYPE_LABEL, buildAccelUrl, buildCloneCommand, getNodeId } from '../lib/convert.js';
 import ModeSwitch from './ModeSwitch.vue';
 
 const { links, removeGroup, convertEpoch } = useConverter();
@@ -39,7 +39,7 @@ const groups = computed(function () {
                 const target = buildAccelUrl(url, n);
                 entries.push({
                     kind: 'item',
-                    key: n.prefix,
+                    key: getNodeId(n),
                     node: n,
                     target,
                     text: clone ? buildCloneCommand(target) : target,

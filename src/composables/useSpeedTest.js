@@ -9,23 +9,46 @@ const CONCURRENCY = 6;
 function loadCache() {
     try {
         const raw = sessionStorage.getItem(CACHE_KEY);
-        return raw ? JSON.parse(raw) : {};
+        const parsed = raw ? JSON.parse(raw) : {};
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        const now = Date.now();
+        const fresh = {};
+        for (const [id, result] of Object.entries(parsed)) {
+            if (id && isUsableResult(result) && now - result.ts < CACHE_TTL && now >= result.ts) {
+                fresh[id] = { ok: result.ok, ms: result.ms, ts: result.ts };
+            }
+        }
+        return fresh;
     } catch {
         return {};
     }
+}
+
+function isUsableResult(result) {
+    return !!result &&
+        typeof result === 'object' &&
+        typeof result.ok === 'boolean' &&
+        typeof result.ms === 'number' &&
+        Number.isFinite(result.ms) &&
+        typeof result.ts === 'number' &&
+        Number.isFinite(result.ts);
 }
 
 const cache = loadCache();
 
 function persistCache() {
     try {
+        const now = Date.now();
+        for (const [id, result] of Object.entries(cache)) {
+            if (!isUsableResult(result) || now - result.ts >= CACHE_TTL || now < result.ts) delete cache[id];
+        }
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
     } catch { /* 隐私模式：仅内存缓存 */ }
 }
 
 function cachedResult(id) {
     const c = cache[id];
-    if (c && Date.now() - c.ts < CACHE_TTL) return c;
+    if (isUsableResult(c) && Date.now() - c.ts < CACHE_TTL && Date.now() >= c.ts) return c;
     return null;
 }
 

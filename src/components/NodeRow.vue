@@ -1,7 +1,7 @@
 <script setup>
 // 单个节点行：名称（点击复制加速主页）、测速徽章、置顶/上下移/删除、拖拽排序。
 // 相比旧版：节点名为真 <button>（无障碍修复）；新增 ↑↓ 键盘排序按钮。
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useNodes } from '../composables/useNodes.js';
 import { useSpeedTest } from '../composables/useSpeedTest.js';
 import { useToast } from '../composables/useToast.js';
@@ -36,11 +36,22 @@ const result = computed(function () { return results[getNodeId(props.node)]; });
 
 // 结果更新时重放 bump 动画
 const justUpdated = ref(false);
+let bumpTimer = null;
+let disposed = false;
 watch(function () { const r = result.value; return r ? r.ts : 0; }, function (nv, ov) {
     if (!ov || nv === ov) return;
+    if (bumpTimer) clearTimeout(bumpTimer);
     justUpdated.value = false;
-    requestAnimationFrame(function () { justUpdated.value = true; });
-    setTimeout(function () { justUpdated.value = false; }, 400);
+    requestAnimationFrame(function () {
+        if (disposed) return;
+        justUpdated.value = true;
+        bumpTimer = setTimeout(function () { justUpdated.value = false; }, 400);
+    });
+});
+
+onBeforeUnmount(function () {
+    disposed = true;
+    if (bumpTimer) clearTimeout(bumpTimer);
 });
 
 const badgeClass = computed(function () {

@@ -17,8 +17,16 @@ const isMulti = computed(function () {
 
 const liveConvert = debounce(doConvert, 250);
 
+function convertNow() {
+    liveConvert.cancel();
+    return doConvert();
+}
+
 function onLive() {
-    if (!liveChk.value) return;
+    if (!liveChk.value) {
+        liveConvert.cancel();
+        return;
+    }
     liveConvert();
 }
 
@@ -33,16 +41,18 @@ function onPaste(e) {
     const text = e.clipboardData ? e.clipboardData.getData('text') : '';
     if (text && text.includes('\n')) {
         e.preventDefault();
+        liveConvert.cancel();
         rawText.value = text.trim();
         nextTick(function () {
             autoResize();
             if (taEl.value) taEl.value.focus();
-            doConvert();
+            convertNow();
         });
     }
 }
 
 function onClear() {
+    liveConvert.cancel();
     clearAll();
     // 清空后必须重置结果，否则切换模式/操作节点会把旧结果渲染出来（useConverter 内已处理）
     nextTick(function () { if (inputEl.value) inputEl.value.focus(); });
@@ -59,16 +69,16 @@ watch(isMulti, function (multi) {
         <input id="inputUrl" ref="inputEl" v-model="rawText" type="text" :hidden="isMulti"
                placeholder="https://github.com/user/repo 或 releases/download/... 或 raw.githubusercontent.com/..."
                autocomplete="off" spellcheck="false"
-               @keydown.enter.prevent="doConvert" @input="onLive" @paste="onPaste" />
+               @keydown.enter.prevent="convertNow" @input="onLive" @paste="onPaste" />
         <textarea id="inputUrls" ref="taEl" v-model="rawText" class="multi-input" rows="3" :hidden="!isMulti"
                   placeholder="一次粘贴多个链接，每行一个，Ctrl+Enter 转换"
                   autocomplete="off" spellcheck="false"
-                  @input="onLive(); autoResize()" @keydown.enter.ctrl.exact.prevent="doConvert"
-                  @keydown.enter.meta.exact.prevent="doConvert"></textarea>
-        <button class="btn btn-primary" type="button" @click="doConvert">转换</button>
+                  @input="onLive(); autoResize()" @keydown.enter.ctrl.exact.prevent="convertNow"
+                  @keydown.enter.meta.exact.prevent="convertNow"></textarea>
+        <button class="btn btn-primary" type="button" @click="convertNow">转换</button>
     </div>
     <div class="input-tools">
-        <label class="paste-hint"><input v-model="liveChk" type="checkbox" /> 输入即实时转换</label>
+        <label class="paste-hint"><input v-model="liveChk" type="checkbox" @change="onLive" /> 输入即实时转换</label>
         <button class="btn btn-ghost btn-sm" type="button" @click="onClear">清空</button>
     </div>
     <p class="hint">支持：仓库主页 / 文件 / Raw / Release / Archive(.zip) / clone / gist 链接 · 多行粘贴可批量转换</p>

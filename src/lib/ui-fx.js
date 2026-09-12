@@ -7,10 +7,15 @@ import { ref } from 'vue';
 
 export function debounce(fn, ms) {
     let t;
-    return function (...args) {
+    const debounced = function (...args) {
         clearTimeout(t);
         t = setTimeout(() => fn(...args), ms);
     };
+    debounced.cancel = function () {
+        clearTimeout(t);
+        t = null;
+    };
+    return debounced;
 }
 
 // Google Fonts 对大陆用户不可达：以非阻塞方式加载（不写入 HTML，避免 CSP 需要 unsafe-inline）。

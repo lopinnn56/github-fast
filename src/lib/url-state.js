@@ -11,7 +11,7 @@ export function syncUrlParam(links) {
             url.searchParams.delete('url');
             links.forEach(function (l) { url.searchParams.append('url', l); });
         } else {
-            url.search = '';
+            url.searchParams.delete('url');
         }
         history.replaceState(null, '', url);
     } catch {

@@ -20,6 +20,8 @@ import {
 describe('normalizeInput', () => {
     const cases = [
         ['https://github.com/u/r', 'https://github.com/u/r'],
+        ['https://www.github.com/u/r', 'https://github.com/u/r'],
+        ['https://www.github.com', 'https://github.com'],
         ['github.com/u/r', 'https://github.com/u/r'],
         ['www.github.com/u/r', 'https://github.com/u/r'],
         ['  github.com/u/r  ', 'https://github.com/u/r'], // 首尾空白
@@ -124,6 +126,15 @@ describe('buildAccelUrl', () => {
         assert.strictEqual(
             buildAccelUrl('https://github.com/u/r?x=1#h', { prefix: 'https://m.example/', mode: 'replace' }),
             'https://m.example/u/r?x=1#h'
+        );
+    });
+    it('replace 模式保留节点自定义路径并使用节点协议', () => {
+        assert.strictEqual(
+            buildAccelUrl('http://github.com/u/r?x=1#h', {
+                prefix: 'https://m.example/base/',
+                mode: 'replace'
+            }),
+            'https://m.example/base/u/r?x=1#h'
         );
     });
     it('坏节点数据原样返回（不产生 undefined 链接）', () => {

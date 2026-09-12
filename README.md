@@ -50,7 +50,7 @@
 
 ### 1. GitHub Proxy 聚合站 — [github.akams.cn](https://github.akams.cn/)
 
-本项目内置的大部分节点（20 个）采集自该站点。它是一个 **GitHub 镜像加速聚合与实时测速平台**，本身也提供 GitHub Proxy / Docker Proxy / KMS 等服务。
+本项目内置的大部分节点（78 个）采集自该站点。它是一个 **GitHub 镜像加速聚合与实时测速平台**，本身也提供 GitHub Proxy / Docker Proxy / KMS 等服务。
 
 - 站点明确支持 **API、Git Clone、Releases、Archive、Gist、Raw** 等资源加速；
 - 页面提供**实时节点测速列表**，本项目优先选取了其中带有有效延迟、且稳定性相对较好的节点；
@@ -152,4 +152,3 @@ wrangler pages deploy ./dist --project-name=github-accel   # 部署前先 wrangl
 ---
 
 *GitHub 加速工具 by lopinnn · 仅供学习交流 · 请遵守当地法律法规*
-
