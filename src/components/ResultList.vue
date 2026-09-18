@@ -8,7 +8,9 @@ import { useMode } from '../composables/useMode.js';
 import { useToast } from '../composables/useToast.js';
 import { copyText } from '../lib/clipboard.js';
 import { detectType, TYPE_LABEL, buildAccelUrl, buildCloneCommand, getNodeId } from '../lib/convert.js';
+import { AUTO_RESOLVE_LIMIT } from '../lib/releases.js';
 import ModeSwitch from './ModeSwitch.vue';
+import ReleaseResolver from './ReleaseResolver.vue';
 
 const { links, removeGroup, convertEpoch } = useConverter();
 const nodesStore = useNodes();
@@ -31,8 +33,11 @@ const groups = computed(function () {
     const mainNodes = nodesStore.main.value;
     const clone = isClone();
     let animationIndex = 0;
+    let repoOrder = 0;
     return links.value.map(function (url) {
         const type = detectType(url);
+        const isRepo = type === 'repo';
+        const myRepoOrder = isRepo ? repoOrder++ : -1;
         const entries = [];
         const pushItems = function (list, pinned) {
             list.forEach(function (n) {
@@ -56,7 +61,7 @@ const groups = computed(function () {
             if (pinnedNodes.length) entries.push({ kind: 'subhead', key: '__sub-main', text: '普通节点 · ' + mainNodes.length });
             pushItems(mainNodes, false);
         }
-        return { url, typeTag: TYPE_LABEL[type] || '', typeClass: type, entries };
+        return { url, typeTag: TYPE_LABEL[type] || '', typeClass: type, isRepo, autoResolve: myRepoOrder >= 0 && myRepoOrder < AUTO_RESOLVE_LIMIT, entries };
     });
 });
 
@@ -118,7 +123,7 @@ function onCopyAll(e) {
         </div>
         <p class="visually-hidden" aria-live="polite">{{ resultStatus }}</p>
         <div class="result-list">
-            <div v-for="g in visibleGroupList" :key="g.url" class="link-group">
+            <div v-for="g in visibleGroupList" :key="g.url" class="link-group" :data-url="g.url">
                 <div v-if="multi" class="group-head">
                     <span class="gh-link" :title="g.url">{{ g.url }}</span>
                     <span class="ri-tag">{{ g.typeTag }}</span>
@@ -128,6 +133,8 @@ function onCopyAll(e) {
                         <button class="mini-btn" type="button" @click="removeGroup(g.url)">删除本组</button>
                     </div>
                 </div>
+
+                <ReleaseResolver v-if="g.isRepo" :repo-url="g.url" :auto="g.autoResolve" />
 
                 <template v-for="entry in g.entries" :key="entry.key">
                     <div v-if="entry.kind === 'subhead'" class="link-subhead">{{ entry.text }}</div>

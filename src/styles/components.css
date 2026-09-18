@@ -86,6 +86,26 @@
 .paste-hint input { accent-color: var(--accent); }
 .hint { color: var(--muted); font-size: .82rem; margin-top: 14px; }
 
+/* Token（Release 查询配额） */
+.token-details { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px; }
+.token-details summary { cursor: pointer; color: var(--muted); font-size: .84rem; user-select: none; }
+.token-details summary:hover { color: var(--accent); }
+.token-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.token-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--field-bg);
+    color: var(--text);
+    font-size: .88rem;
+    font-family: var(--font-mono);
+    outline: none;
+}
+.token-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217, 119, 87, .16); }
+.token-details .hint { margin-top: 8px; }
+
 /* Results */
 .results { margin-top: 26px; border-top: 1px dashed var(--border); padding-top: 22px; }
 .results-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
@@ -128,7 +148,11 @@
     /* 批量转换时跳过视口外分组的布局与绘制，避免大 DOM 集卡顿 */
     content-visibility: auto;
     contain-intrinsic-size: auto 320px;
+    border-radius: 12px;
+    transition: box-shadow .3s;
 }
+/* “在下方查看全部”滚动定位时的短暂高亮 */
+.link-group.flash { box-shadow: 0 0 0 2px var(--accent); content-visibility: visible; }
 .group-head {
     display: flex;
     align-items: center;
