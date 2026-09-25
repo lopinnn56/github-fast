@@ -51,7 +51,9 @@ function onPaste(e) {
     if (text && text.includes('\n')) {
         e.preventDefault();
         liveConvert.cancel();
-        rawText.value = text.trim();
+        // 多行粘贴追加到现有输入之后，避免覆盖用户已输入的内容
+        const existing = rawText.value.trim();
+        rawText.value = existing ? existing + '\n' + text.trim() : text.trim();
         nextTick(function () {
             autoResize();
             if (taEl.value) taEl.value.focus();

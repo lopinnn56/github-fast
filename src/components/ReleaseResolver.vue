@@ -2,11 +2,12 @@
 // Release 自动解析：仓库主页链接 → latest release 全部附件 → 一键加入加速列表。
 // 一键加速后行内展开原链 + 前 N 条加速链 + “查看全部”滚动定位，不自动触发下载。
 // 自动查询由父组件通过 auto 控制（批量时只自动前 N 个），失败可手动重试。
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useReleaseResolver } from '../composables/useReleaseResolver.js';
 import { useNodes } from '../composables/useNodes.js';
 import { useToast } from '../composables/useToast.js';
 import { copyText } from '../lib/clipboard.js';
+import { getNodeId } from '../lib/convert.js';
 import { parseRepoSlug, formatSize, buildArchiveUrl, buildTopAccelLinks, TOP_ACCEL_LINKS } from '../lib/releases.js';
 
 const props = defineProps({
@@ -51,19 +52,27 @@ function copyWithToast(text, btn) {
     });
 }
 
+// 展开行的加速链缓存：同一下载链接只在首次展开时计算一次（节点列表变化时自动失效）。
+const topLinksCache = new Map();
+
 function topLinks(downloadUrl) {
-    try {
-        return buildTopAccelLinks(downloadUrl, nodesStore.all.value, TOP_ACCEL_LINKS);
-    } catch {
-        return [];
-    }
+    if (topLinksCache.has(downloadUrl)) return topLinksCache.get(downloadUrl);
+    const links = buildTopAccelLinks(downloadUrl, nodesStore.all.value, TOP_ACCEL_LINKS);
+    topLinksCache.set(downloadUrl, links);
+    return links;
 }
+
+// 节点列表变化（增删/排序）时清空缓存，保证展开行反映最新节点
+watch(function () { return nodesStore.all.value.map(getNodeId).join('|'); }, function () {
+    topLinksCache.clear();
+});
 
 function onAccelerate(url) {
     if (!url) return;
     addAssetToConvert(url);
     // 无论新加入还是已存在，都展开行内提示，让用户直接看到原链与下载入口
     expanded.value[url] = true;
+    topLinksCache.delete(url);
 }
 
 function isExpanded(url) {

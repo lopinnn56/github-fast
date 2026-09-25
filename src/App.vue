@@ -1,6 +1,6 @@
 <script setup>
 // 应用外壳：导航 / Hero / 各区块静态内容 + 全局效果（入场动画、滚动状态、Toast、返回顶部）。
-import { onMounted } from 'vue';
+import { onBeforeUnmount, onMounted } from 'vue';
 import { useConverter } from './composables/useConverter.js';
 import { useToast } from './composables/useToast.js';
 import { useScrollFx, initReveal } from './lib/ui-fx.js';
@@ -10,13 +10,20 @@ import NodeManager from './components/NodeManager.vue';
 
 const { applyUrlParams } = useConverter();
 const { toast } = useToast();
-const { scrolled, showBackTop, backToTop, bind } = useScrollFx();
+const { scrolled, showBackTop, backToTop, bind, unbind } = useScrollFx();
+
+let revealCleanup = null;
 
 onMounted(function () {
     bind();
-    initReveal();
+    revealCleanup = initReveal() || null;
     // 地址栏 ?url= 直达：回填输入并出结果
     applyUrlParams();
+});
+
+onBeforeUnmount(function () {
+    unbind();
+    if (revealCleanup) revealCleanup();
 });
 </script>
 

@@ -8,26 +8,26 @@ import {
     setStoredToken
 } from '../lib/releases.js';
 import { useConverter } from './useConverter.js';
-import { useToast } from './useToast.js';
-
-// 模块级单例：多个 ReleaseResolver 实例共享同一仓库的查询结果与 Token。
-const states = reactive(Object.create(null));
-const inFlight = new Map();
-const token = ref(getStoredToken());
-
-function ensureState(slug) {
-    const key = String(slug || '').toLowerCase();
-    if (!states[key]) {
-        states[key] = { status: 'idle', slug, data: null, error: '', code: '', fromCache: false };
-    }
-    return states[key];
-}
+import { createToastStore } from './useToast.js';
 
 /**
- * Release 自动解析：缓存 → 网络，并发去重，Token 持久化。
+ * Release 解析 Store（重构 v3.1）：工厂 + 应用级单例。
+ * - resolveRepo 统一返回响应式 state 对象（快路径/慢路径一致），不再 Promise/对象二象性。
+ * - 所有状态（states/token）由工厂字段持有，可在测试中创建隔离实例。
  */
-export function useReleaseResolver() {
-    const { showToast } = useToast();
+export function createReleaseResolverStore({ toast = createToastStore() } = {}) {
+    const states = reactive(Object.create(null));
+    const inFlight = new Map();
+    const token = ref(getStoredToken());
+    const { showToast } = toast;
+
+    function ensureState(slug) {
+        const key = String(slug || '').toLowerCase();
+        if (!states[key]) {
+            states[key] = { status: 'idle', slug, data: null, error: '', code: '', fromCache: false };
+        }
+        return states[key];
+    }
 
     function saveToken(value) {
         const t = (value || '').trim();
@@ -47,14 +47,50 @@ export function useReleaseResolver() {
         showToast('Token 已清除');
     }
 
-    async function resolveRepo(repoUrl, opts) {
+    function beginFetch(slug, st) {
+        st.status = 'loading';
+        st.error = '';
+        st.code = '';
+        st.fromCache = false;
+        const p = fetchLatestRelease(slug, { token: token.value })
+            .then(function (result) {
+                st.status = 'done';
+                st.data = result.release;
+                st.error = '';
+                st.code = '';
+                st.fromCache = Boolean(result.fromCache);
+                writeReleaseCache(slug, result.release);
+            })
+            .catch(function (err) {
+                st.status = 'error';
+                st.data = null;
+                st.error = (err && err.message) || '查询失败';
+                st.code = (err && err.code) || '';
+            })
+            .finally(function () {
+                inFlight.delete(slug.toLowerCase());
+            });
+        inFlight.set(slug.toLowerCase(), p);
+        return p;
+    }
+
+    /**
+     * 解析仓库 Release。统一返回响应式 state（status: idle|loading|done|error）。
+     * @param {string} repoUrl 仓库主页链接
+     * @param {{force?: boolean}} [opts]
+     * @returns {object|null} 响应式状态对象；无法解析的 URL 返回 null
+     */
+    function resolveRepo(repoUrl, opts) {
         const options = opts || {};
         const slug = parseRepoSlug(repoUrl);
         if (!slug) return null;
         const key = slug.toLowerCase();
         const st = ensureState(slug);
+
+        // 并发去重：同一 slug 已有在途请求时直接复用（状态经同一 st 响应式可见）
+        if (!options.force && inFlight.has(key)) return st;
+        // 快路径：已加载 / 加载中
         if (!options.force && (st.status === 'loading' || st.status === 'done')) return st;
-        if (inFlight.has(key)) return inFlight.get(key);
 
         // 先读 5 分钟 sessionStorage 缓存
         if (!options.force) {
@@ -63,35 +99,14 @@ export function useReleaseResolver() {
                 st.status = 'done';
                 st.data = cached;
                 st.error = '';
+                st.code = '';
                 st.fromCache = true;
                 return st;
             }
         }
 
-        st.status = 'loading';
-        st.error = '';
-        st.fromCache = false;
-        const p = fetchLatestRelease(slug, { token: token.value })
-            .then(function (result) {
-                st.status = 'done';
-                st.data = result.release;
-                st.error = '';
-                st.fromCache = Boolean(result.fromCache);
-                writeReleaseCache(slug, result.release);
-                return st;
-            })
-            .catch(function (err) {
-                st.status = 'error';
-                st.data = null;
-                st.error = (err && err.message) || '查询失败';
-                st.code = (err && err.code) || '';
-                return st;
-            })
-            .finally(function () {
-                inFlight.delete(key);
-            });
-        inFlight.set(key, p);
-        return p;
+        beginFetch(slug, st);
+        return st;
     }
 
     /**
@@ -119,4 +134,12 @@ export function useReleaseResolver() {
     }
 
     return { states, token, saveToken, clearToken, resolveRepo, getState, addAssetToConvert };
+}
+
+let singleton = null;
+
+/** 应用级共享 Release 解析状态（多个 ReleaseResolver 实例共享同一仓库的查询结果与 Token）。 */
+export function useReleaseResolver() {
+    if (!singleton) singleton = createReleaseResolverStore();
+    return singleton;
 }

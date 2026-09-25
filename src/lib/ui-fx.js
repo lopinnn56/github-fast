@@ -67,9 +67,15 @@ export function initReveal() {
             if (!el.classList.contains('in-view')) el.classList.add('in-view');
         });
     }
-    // 兜底：观察器失效（如 bfcache 恢复）时不至于永久隐藏内容
-    setTimeout(forceShowAll, 1500);
+    // 兜底：观察器失效（如 bfcache 恢复）时不至于永久隐藏内容。
+    // 定时器与监听器都登记可清理，组件卸载时释放避免重复触发。
+    const safetyTimer = setTimeout(forceShowAll, 1500);
     window.addEventListener('pageshow', forceShowAll);
+    return function cleanup() {
+        clearTimeout(safetyTimer);
+        io.disconnect();
+        window.removeEventListener('pageshow', forceShowAll);
+    };
 }
 
 /** 导航阴影 + 返回顶部按钮可见性（rAF 节流的被动滚动监听） */
@@ -93,5 +99,13 @@ export function useScrollFx() {
         window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
     }
 
-    return { scrolled, showBackTop, backToTop, bind: () => window.addEventListener('scroll', onScroll, { passive: true }) };
+    function bind() {
+        window.addEventListener('scroll', onScroll, { passive: true });
+    }
+    function unbind() {
+        window.removeEventListener('scroll', onScroll);
+        if (raf) { cancelAnimationFrame(raf); raf = null; }
+    }
+
+    return { scrolled, showBackTop, backToTop, bind, unbind };
 }

@@ -26,47 +26,80 @@ function copyWithToast(text, btn) {
     });
 }
 
-// 每个链接一组，组内是「小标题 / 结果项」扁平渲染序列；节点或模式变化自动重算。
-// entries: [{kind:'subhead', text}] | [{kind:'item', node, target, pinned}]
+// 轻量分组 meta：只做链接级解析（URL / 类型 / 自动解析标记），
+// 不预先展开 70+ 节点的 entries —— 批量粘贴 100 链接时避免一次构建 7000 项。
 const groups = computed(function () {
-    const pinnedNodes = nodesStore.pinned.value;
-    const mainNodes = nodesStore.main.value;
-    const clone = isClone();
-    let animationIndex = 0;
     let repoOrder = 0;
     return links.value.map(function (url) {
         const type = detectType(url);
         const isRepo = type === 'repo';
         const myRepoOrder = isRepo ? repoOrder++ : -1;
-        const entries = [];
-        const pushItems = function (list, pinned) {
-            list.forEach(function (n) {
-                const target = buildAccelUrl(url, n);
-                entries.push({
-                    kind: 'item',
-                    key: getNodeId(n),
-                    node: n,
-                    target,
-                    text: clone ? buildCloneCommand(target) : target,
-                    pinned,
-                    delay: Math.min(animationIndex++, 24) * 30 + 'ms'
-                });
-            });
+        return {
+            url,
+            typeTag: TYPE_LABEL[type] || '',
+            typeClass: type,
+            isRepo,
+            autoResolve: myRepoOrder >= 0 && myRepoOrder < AUTO_RESOLVE_LIMIT
         };
-        if (pinnedNodes.length) {
-            entries.push({ kind: 'subhead', key: '__sub-pinned', text: '置顶节点 · ' + pinnedNodes.length });
-            pushItems(pinnedNodes, true);
-        }
-        if (mainNodes.length) {
-            if (pinnedNodes.length) entries.push({ kind: 'subhead', key: '__sub-main', text: '普通节点 · ' + mainNodes.length });
-            pushItems(mainNodes, false);
-        }
-        return { url, typeTag: TYPE_LABEL[type] || '', typeClass: type, isRepo, autoResolve: myRepoOrder >= 0 && myRepoOrder < AUTO_RESOLVE_LIMIT, entries };
     });
 });
 
+// 节点/模式签名：任一变化即视为 entries 失效（缓存 key 的一部分）
+const groupSig = computed(function () {
+    return (isClone() ? 'c' : 'l') + '|' +
+        nodesStore.pinned.value.map(getNodeId).join(',') + '|' +
+        nodesStore.main.value.map(getNodeId).join(',');
+});
+
+// 单个分组的完整渲染数据（含全部节点的 entries），惰性构建并缓存。
+function buildGroupMeta(g, sig) {
+    const pinnedNodes = nodesStore.pinned.value;
+    const mainNodes = nodesStore.main.value;
+    const clone = isClone();
+    const entries = [];
+    let animationIndex = 0;
+    const pushItems = function (list, pinned) {
+        list.forEach(function (n) {
+            const target = buildAccelUrl(g.url, n);
+            entries.push({
+                kind: 'item',
+                key: getNodeId(n),
+                node: n,
+                target,
+                text: clone ? buildCloneCommand(target) : target,
+                pinned,
+                delay: Math.min(animationIndex++, 24) * 30 + 'ms'
+            });
+        });
+    };
+    if (pinnedNodes.length) {
+        entries.push({ kind: 'subhead', key: '__sub-pinned', text: '置顶节点 · ' + pinnedNodes.length });
+        pushItems(pinnedNodes, true);
+    }
+    if (mainNodes.length) {
+        if (pinnedNodes.length) entries.push({ kind: 'subhead', key: '__sub-main', text: '普通节点 · ' + mainNodes.length });
+        pushItems(mainNodes, false);
+    }
+    return { ...g, sig, entries };
+}
+
+// 可见分组：只构建当前可见的分组，未展示的分组不消耗构建时间。
+const entryCache = new Map();
 const visibleGroupList = computed(function () {
-    return groups.value.slice(0, visibleGroups.value);
+    const sig = groupSig.value;
+    return groups.value.slice(0, visibleGroups.value).map(function (g) {
+        const key = g.url + '\u0000' + sig;
+        let built = entryCache.get(key);
+        if (!built) {
+            built = buildGroupMeta(g, sig);
+            entryCache.set(key, built);
+            if (entryCache.size > 300) { // 防御：缓存只保留最近条目
+                const oldest = entryCache.keys().next().value;
+                entryCache.delete(oldest);
+            }
+        }
+        return built;
+    });
 });
 const hiddenGroupCount = computed(function () {
     return Math.max(groups.value.length - visibleGroups.value, 0);
@@ -79,6 +112,10 @@ const resultStatus = computed(function () {
 // 仅在新转换发生时重置分页；删除分组（removeGroup 只改 links）不收回已展开的分页
 watch(convertEpoch, function () {
     visibleGroups.value = RESULT_PAGE_SIZE;
+});
+
+watch(groupSig, function () {
+    entryCache.clear();
 });
 
 function showMoreGroups() {
