@@ -1,24 +1,22 @@
 import { reactive, ref } from 'vue';
-import {
-    parseRepoSlug,
-    fetchLatestRelease,
-    readReleaseCache,
-    writeReleaseCache,
-    getStoredToken,
-    setStoredToken
-} from '../lib/releases.js';
-import { useConverter } from './useConverter.js';
+import { parseRepoSlug } from '../lib/releases-core.js';
+import { getDefaultReleaseGateway } from '../platform/release-gateway.js';
 import { createToastStore } from './useToast.js';
+import { defineFallback, useStore } from '../app/context.js';
 
 /**
- * Release 解析 Store（重构 v3.1）：工厂 + 应用级单例。
- * - resolveRepo 统一返回响应式 state 对象（快路径/慢路径一致），不再 Promise/对象二象性。
- * - 所有状态（states/token）由工厂字段持有，可在测试中创建隔离实例。
+ * Release 解析 Store（v4）：纯工厂 + 容器注入。
+ *
+ * v3.1 的 addAssetToConvert 内部直接 `useConverter()` —— 隐藏的模块单例耦合：
+ * 工厂创建的实例与组件里的实例可能不是同一个，测试也无法注入假 converter。
+ * v4 把 converter / gateway / toast 全部显式注入；容器外由 defineFallback 的
+ * get() 解析同一作用域实例。resolveRepo 统一返回响应式 state，不再二象性。
  */
-export function createReleaseResolverStore({ toast = createToastStore() } = {}) {
+export function createReleaseResolverStore({ toast = createToastStore(), gateway = null, converter = null } = {}) {
+    const gw = gateway || getDefaultReleaseGateway();
     const states = reactive(Object.create(null));
     const inFlight = new Map();
-    const token = ref(getStoredToken());
+    const token = ref(gw.getToken());
     const { showToast } = toast;
 
     function ensureState(slug) {
@@ -38,12 +36,12 @@ export function createReleaseResolverStore({ toast = createToastStore() } = {}) 
             showToast('Token 已保存到本地');
         }
         token.value = t;
-        setStoredToken(t);
+        gw.setToken(t);
     }
 
     function clearToken() {
         token.value = '';
-        setStoredToken('');
+        gw.setToken('');
         showToast('Token 已清除');
     }
 
@@ -52,14 +50,14 @@ export function createReleaseResolverStore({ toast = createToastStore() } = {}) 
         st.error = '';
         st.code = '';
         st.fromCache = false;
-        const p = fetchLatestRelease(slug, { token: token.value })
+        const p = gw.fetchRelease(slug, { token: token.value })
             .then(function (result) {
                 st.status = 'done';
                 st.data = result.release;
                 st.error = '';
                 st.code = '';
                 st.fromCache = Boolean(result.fromCache);
-                writeReleaseCache(slug, result.release);
+                gw.writeCache(slug, result.release);
             })
             .catch(function (err) {
                 st.status = 'error';
@@ -94,7 +92,7 @@ export function createReleaseResolverStore({ toast = createToastStore() } = {}) 
 
         // 先读 5 分钟 sessionStorage 缓存
         if (!options.force) {
-            const cached = readReleaseCache(slug);
+            const cached = gw.readCache(slug);
             if (cached) {
                 st.status = 'done';
                 st.data = cached;
@@ -111,12 +109,13 @@ export function createReleaseResolverStore({ toast = createToastStore() } = {}) 
 
     /**
      * 把解析到的具体下载链接加入加速列表，走现有镜像加速流程。
+     * converter 由容器显式注入（v4 消除隐藏单例耦合）。
      * @param {string} downloadUrl 形如 .../releases/download/v1.5.1/xxx.apk
      * @returns {'added'|'exists'|false} added=新加入，exists=已在列表，false=失败
      */
     function addAssetToConvert(downloadUrl) {
-        if (!downloadUrl) return false;
-        const { links, rawText } = useConverter();
+        if (!downloadUrl || !converter) return false;
+        const { links, rawText } = converter;
         if (links.value.includes(downloadUrl)) {
             showToast('该文件已在加速列表中，下方可直接下载');
             return 'exists';
@@ -136,10 +135,14 @@ export function createReleaseResolverStore({ toast = createToastStore() } = {}) 
     return { states, token, saveToken, clearToken, resolveRepo, getState, addAssetToConvert };
 }
 
-let singleton = null;
+// 容器外：toast 与 converter 都从同一回退作用域解析，保证 addAssetToConvert
+// 写入的正是 useConverter() 返回的那一份实例。
+defineFallback('releaseResolver', (get) => createReleaseResolverStore({
+    toast: get('toast'),
+    converter: get('converter')
+}));
 
 /** 应用级共享 Release 解析状态（多个 ReleaseResolver 实例共享同一仓库的查询结果与 Token）。 */
 export function useReleaseResolver() {
-    if (!singleton) singleton = createReleaseResolverStore();
-    return singleton;
+    return useStore('releaseResolver');
 }

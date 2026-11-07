@@ -1,0 +1,133 @@
+/* v4 拆分：来自 components.css:243-374（内容原样保留） */
+/* ---------- Nodes ---------- */
+.nodes { max-width: 1120px; margin: 0 auto; }
+.nodes-card {
+    max-width: 880px;
+    margin: 0 auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 28px 30px;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    box-shadow: var(--shadow-nodes), inset 0 1px 0 var(--glass-highlight);
+}
+.nodes-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 10px; flex-wrap: wrap; }
+.nodes-count { color: var(--muted2); font-size: .85rem; }
+.nodes-head-actions { display: flex; gap: 8px; }
+.nodes-head .btn-ghost.btn-sm {
+    border-radius: 999px;
+    background: var(--card2);
+    border-color: var(--border);
+    padding: 7px 16px;
+}
+.nodes-head .btn-ghost.btn-sm:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.node-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.node-row {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 15px;
+    background: var(--row-bg);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    cursor: grab;
+    transition: border-color .2s, background-color .2s, transform .2s;
+}
+.node-row:hover { border-color: var(--accent); transform: translateX(3px); }
+.node-row.dragging { opacity: .4; }
+.node-row .n-info { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.node-row .n-name {
+    font-weight: 600;
+    cursor: pointer;
+    /* 最小可见宽度：行内再挤也保留可辨识的名称片段 */
+    min-width: 88px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* 节点名现在是真 <button>（无障碍修复）：重置按钮默认外观以保持原视觉 */
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    border-radius: 4px;
+}
+.node-row .n-name:hover { color: var(--accent); }
+.node-row .n-host { font-size: .78rem; color: var(--muted2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node-row .n-speed {
+    font-size: .7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--field);
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background-color .3s, color .3s, transform .2s;
+}
+.n-speed.bump { animation: speed-bump .35s ease; }
+@keyframes speed-bump {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+}
+.node-row .n-speed.s-ok { background: rgba(78, 207, 154, .14); color: var(--ok); }
+.node-row .n-speed.s-bad { background: rgba(255, 122, 144, .14); color: var(--bad); }
+.node-row .n-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.node-row .n-mini {
+    padding: 5px 11px;
+    font-size: .78rem;
+    border-radius: 7px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+    transition: color .2s, border-color .2s;
+}
+.node-row .n-mini:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.node-row .n-del:hover:not(:disabled) { color: var(--bad); border-color: var(--bad); }
+.node-row .n-unpin:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); }
+.node-row .n-mini:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Pinned queue */
+.pinned-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 2px 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--border);
+}
+/* hidden 属性会被上面的 display:flex 覆盖，必须显式恢复 */
+.pinned-head[hidden] { display: none; }
+.pinned-title {
+    font-size: .86rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .02em;
+}
+.pinned-title::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 7px;
+    border-radius: 2px;
+    background: var(--accent);
+}
+.pinned-count { font-size: .78rem; color: var(--muted2); }
+.pinned-list { margin-bottom: 14px; }
+.pinned-list .node-row {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+}
+

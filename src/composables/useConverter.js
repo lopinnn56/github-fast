@@ -1,23 +1,24 @@
 import { ref, watch } from 'vue';
 import { parseBatchWithStats, isGitHubUrl, MAX_BATCH } from '../lib/convert.js';
-import { syncUrlParam, readUrlParams } from '../lib/url-state.js';
+import { createUrlState } from '../lib/url-state.js';
 import { createToastStore } from './useToast.js';
+import { defineFallback, useStore } from '../app/context.js';
 
 /**
- * 转换 Store（重构 v3.1）：工厂 + 应用级单例。
+ * 转换 Store（v4）：纯工厂 + 容器注入。
  *
- * 原实现把 links/rawText/convertEpoch 与 watch 副作用放在模块顶层：
- * - 测试/多实例场景互相污染；
- * - 顶层 watch 在 import 时立即注册，难以控制。
- * 现在所有状态与副作用都在 createConverterStore 内部，仅懒加载单例。
+ * v3.1 把 links/rawText/convertEpoch 与 watch 副作用放在模块顶层，测试/多实例互相污染；
+ * 现在所有状态与副作用都在 createConverterStore 内部。地址栏读写由 urlState 注入，
+ * 浏览器环境由 createAppContext() 用 platform 片段构造一次，Node 测试环境静默跳过。
  */
-export function createConverterStore({ toast = createToastStore() } = {}) {
+export function createConverterStore({ toast = createToastStore(), urlState = createUrlState() } = {}) {
     const links = ref([]);
     const rawText = ref('');
     // 转换纪元：仅在「产生新结果」（doConvert / applyUrlParams）时自增。
     // 结果区据此重置分页——删除分组（removeGroup）不应把用户展开的分页收回去。
     const convertEpoch = ref(0);
     const { showToast } = toast;
+    const { syncUrlParam, readUrlParams } = urlState;
 
     function notifySkipped(batch) {
         const overflow = batch.acceptedTotal - batch.urls.length;
@@ -99,10 +100,10 @@ export function createConverterStore({ toast = createToastStore() } = {}) {
     };
 }
 
-let singleton = null;
+// 容器外：与同作用域的 toast 共享一个实例（get 解析，避免各自建单例）。
+defineFallback('converter', (get) => createConverterStore({ toast: get('toast') }));
 
 /** 应用级共享转换状态（输入面板 ↔ 结果列表）。 */
 export function useConverter() {
-    if (!singleton) singleton = createConverterStore();
-    return singleton;
+    return useStore('converter');
 }

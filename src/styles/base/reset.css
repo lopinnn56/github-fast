@@ -1,0 +1,20 @@
+/* v4 拆分：来自 base.css:1-19（内容原样保留） */
+/* 基础层：重置 / 背景光斑 / 导航 / 按钮 / Hero / 终端 / 页脚 / Toast / 动效 */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+}
+
+body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+

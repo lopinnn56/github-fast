@@ -1,0 +1,39 @@
+/* v4 拆分：来自 components.css:387-424（内容原样保留） */
+/* ---------- FAQ ---------- */
+.faq { max-width: 1120px; margin: 0 auto; }
+.faq-list { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.faq-item {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    overflow: hidden;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    box-shadow: inset 0 1px 0 var(--glass-highlight);
+    transition: border-color .2s, background-color .2s;
+}
+.faq-item[open] { border-color: rgba(217, 119, 87, .4); background: var(--glass-bg-strong); }
+.faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 22px;
+    font-weight: 600;
+    font-size: .98rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    user-select: none;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after {
+    content: '+';
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: var(--accent);
+    flex: none;
+    transition: transform .25s;
+}
+.faq-item[open] summary::after { transform: rotate(45deg); }
+.faq-body { padding: 0 22px 20px; color: var(--muted); font-size: .93rem; line-height: 1.8; }
+

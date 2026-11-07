@@ -1,0 +1,92 @@
+/* Release 解析卡片（v4：从 ReleaseResolver.vue 的 <style scoped> 外移为全局样式） */
+.release-box {
+    background: var(--field);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.rb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rb-title { font-size: .82rem; font-weight: 700; color: var(--text); }
+.rb-tag {
+    font-size: .68rem;
+    font-weight: 700;
+    color: #101010;
+    background: #4ecf9a;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+.rb-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rb-muted { font-size: .82rem; color: var(--muted); }
+.rb-error .rb-muted { color: var(--bad, #ff7a90); }
+.rb-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.rb-meta { font-size: .8rem; color: var(--muted); }
+.rb-link { color: var(--accent); text-decoration: none; margin-left: 8px; }
+.rb-link:hover { text-decoration: underline; }
+.rb-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.rb-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: var(--row-bg);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 8px 10px;
+}
+.rb-name {
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: var(--text);
+    word-break: break-all;
+    flex: 1;
+    min-width: 140px;
+}
+.rb-size { font-size: .76rem; color: var(--muted2); white-space: nowrap; }
+.rb-go { border-color: var(--accent); color: var(--accent); }
+.rb-go:hover { background: var(--accent); color: #fff; }
+/* 一键加速后的行内下载提示 */
+.rb-accel {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+}
+.rb-accel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    background: var(--field);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 9px;
+}
+.rb-accel-orig { border-style: solid; border-color: var(--accent); }
+.rb-accel-label {
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--accent);
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.rb-accel-url {
+    font-family: var(--font-mono);
+    font-size: .74rem;
+    color: var(--muted);
+    word-break: break-all;
+    flex: 1;
+    min-width: 140px;
+}
+.rb-accel .rb-actions { margin-left: auto; }
+.rb-dl { border-color: var(--accent); color: var(--accent); }
+.rb-dl:hover { background: var(--accent); color: #fff; }
+.rb-more { align-self: flex-start; }

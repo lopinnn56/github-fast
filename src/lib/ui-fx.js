@@ -3,6 +3,7 @@
  * 与 Vue 组件解耦：reveal 直接操作既有类名，滚动状态通过 ref 暴露给组件。
  */
 import { ref } from 'vue';
+import { LIMITS } from '../config/constants.js';
 
 
 export function debounce(fn, ms) {
@@ -69,7 +70,7 @@ export function initReveal() {
     }
     // 兜底：观察器失效（如 bfcache 恢复）时不至于永久隐藏内容。
     // 定时器与监听器都登记可清理，组件卸载时释放避免重复触发。
-    const safetyTimer = setTimeout(forceShowAll, 1500);
+    const safetyTimer = setTimeout(forceShowAll, LIMITS.revealFallbackMs);
     window.addEventListener('pageshow', forceShowAll);
     return function cleanup() {
         clearTimeout(safetyTimer);

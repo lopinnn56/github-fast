@@ -1,0 +1,14 @@
+/* v4 拆分：来自 base.css:441-453（内容原样保留） */
+/* ---------- Animations ---------- */
+@keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+@keyframes blink {
+    0%, 55% { opacity: 1; }
+    56%, 100% { opacity: 0; }
+}
+

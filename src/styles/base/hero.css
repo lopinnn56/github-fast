@@ -1,0 +1,63 @@
+/* v4 拆分：来自 base.css:206-267（内容原样保留） */
+/* ---------- Hero ---------- */
+.hero {
+    padding: 96px 24px 88px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+.hero-inner { max-width: 1120px; margin: 0 auto; }
+
+.eyebrow {
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+}
+
+.hero h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(2.6rem, 6vw, 4.4rem);
+    font-weight: 500;
+    letter-spacing: -.015em;
+    line-height: 1.08;
+    color: var(--text);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .hero h1 {
+        background: linear-gradient(120deg, var(--text) 0%, var(--text) 38%, var(--accent) 78%, #ffd166 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(900px 420px at 50% -8%, var(--hero-glow-1) 0%, transparent 62%),
+        radial-gradient(700px 340px at 85% 30%, var(--hero-glow-2) 0%, transparent 60%);
+}
+
+.hero-sub {
+    margin: 22px auto 0;
+    max-width: 620px;
+    color: var(--muted);
+    font-size: 1.12rem;
+    line-height: 1.75;
+}
+
+.hero-cta {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 34px;
+    flex-wrap: wrap;
+}
+

@@ -5,7 +5,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useNodes } from '../composables/useNodes.js';
 import { useSpeedTest } from '../composables/useSpeedTest.js';
 import { useToast } from '../composables/useToast.js';
-import { copyText } from '../lib/clipboard.js';
+import { useCopy } from '../composables/useCopy.js';
 import { buildAccelUrl, getNodeId, hostOf } from '../lib/convert.js';
 
 const props = defineProps({
@@ -20,12 +20,7 @@ const emit = defineEmits(['drag-start', 'drag-end', 'drop-row']);
 const nodesStore = useNodes();
 const { results } = useSpeedTest();
 const { showToast } = useToast();
-
-function copyWithToast(text, btn) {
-    copyText(text, btn).then(function (ok) {
-        showToast(ok ? '已复制' : '复制失败，请手动复制');
-    });
-}
+const { copyWithToast } = useCopy();
 
 function copyHome(e) {
     copyWithToast(buildAccelUrl('https://github.com', props.node), e.currentTarget);

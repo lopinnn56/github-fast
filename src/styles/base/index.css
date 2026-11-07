@@ -1,0 +1,16 @@
+/* base 层聚合入口：顺序与拆分前 base.css 完全一致 */
+@import './reset.css';
+@import './scrollbar.css';
+@import './backdrop.css';
+@import './nav.css';
+@import './buttons.css';
+@import './hero.css';
+@import './terminal.css';
+@import './sections.css';
+@import './footer.css';
+@import './toast.css';
+@import './back-top.css';
+@import './reveal.css';
+@import './ambient.css';
+@import './animations.css';
+@import './glass-fallback.css';

@@ -1,0 +1,21 @@
+/* v4 拆分：来自 components.css:89-108（内容原样保留） */
+/* Token（Release 查询配额） */
+.token-details { margin-top: 12px; border-top: 1px dashed var(--border); padding-top: 10px; }
+.token-details summary { cursor: pointer; color: var(--muted); font-size: .84rem; user-select: none; }
+.token-details summary:hover { color: var(--accent); }
+.token-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.token-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--field-bg);
+    color: var(--text);
+    font-size: .88rem;
+    font-family: var(--font-mono);
+    outline: none;
+}
+.token-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217, 119, 87, .16); }
+.token-details .hint { margin-top: 8px; }
+

@@ -1,0 +1,39 @@
+/* v4 拆分：来自 base.css:100-137（内容原样保留） */
+/* ---------- Nav ---------- */
+.nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--nav-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow .3s ease, background-color .3s ease;
+}
+.nav.scrolled {
+    background: var(--nav-bg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+}
+.nav-inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    transition: height .3s ease;
+}
+.nav.scrolled .nav-inner { height: 52px; }
+.nav-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 600;
+    font-size: .95rem;
+}
+.nav-logo-text { flex: 1; }
+.btn-nav.btn-primary { margin-left: auto; flex: none; padding: 6px 14px; font-size: .82rem; border-radius: 8px; }
+

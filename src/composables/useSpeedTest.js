@@ -1,10 +1,13 @@
 import { reactive } from 'vue';
+import { LIMITS, STORAGE_KEYS } from '../config/constants.js';
 import { buildAccelUrl, getNodeId, normalizeNode } from '../lib/convert.js';
+import { createBrowserPlatform } from '../platform/browser.js';
+import { defineFallback, useStore } from '../app/context.js';
 
-const SPEED_TIMEOUT = 3500;
-const CACHE_KEY = 'gh_accel_speed';
-const CACHE_TTL = 5 * 60 * 1000;
-const CONCURRENCY = 6;
+const SPEED_TIMEOUT = LIMITS.speedTimeout;
+const CACHE_KEY = STORAGE_KEYS.speedCache;
+const CACHE_TTL = LIMITS.cacheTtl;
+const CONCURRENCY = LIMITS.speedConcurrency;
 
 function loadCache(storage) {
     if (!storage) return {};
@@ -52,7 +55,7 @@ function persistCache(storage, cache) {
 // 实现见文末 probeOnceWith（带 fetchFn 注入支持，测试/降级友好）。
 
 /**
- * 节点测速 Store（重构 v3.1）：工厂化，storage/fetch 可注入便于测试。
+ * 节点测速 Store（v4）：纯工厂，storage/fetch 可注入便于测试。
  * `run()` 返回 Promise；运行中重复调用直接返回 null（加锁）。
  */
 export function createSpeedTestStore({ storage = null, fetchFn = null } = {}) {
@@ -83,7 +86,7 @@ export function createSpeedTestStore({ storage = null, fetchFn = null } = {}) {
         return result;
     }
 
-    // 模块级单例状态：results[prefix] = {ok, ms}，供节点行徽章响应式渲染
+    // 工厂内状态：results[prefix] = {ok, ms}，供节点行徽章响应式渲染
     const results = reactive({});
     const progress = reactive({ active: false, done: 0, total: 0 });
 
@@ -160,11 +163,15 @@ function probeOnceWith(url, cors, timeout, fetchFn) {
     });
 }
 
-let singleton = null;
-const singletonStorage = typeof sessionStorage !== 'undefined' ? sessionStorage : null;
+// 容器外（node:test / 脚本）：首次调用时才探测浏览器全局。
+// 关键：speed-cache.test.js 先设置 globalThis.sessionStorage 再动态 import 并调用
+// useSpeedTest()，因此必须在「调用时」经 createBrowserPlatform() 读取当前全局。
+defineFallback('speedTest', () => {
+    const platform = createBrowserPlatform();
+    return createSpeedTestStore({ storage: platform.sessionStorage, fetchFn: platform.fetchFn });
+});
 
 /** 应用级共享测速状态。 */
 export function useSpeedTest() {
-    if (!singleton) singleton = createSpeedTestStore({ storage: singletonStorage });
-    return singleton;
+    return useStore('speedTest');
 }

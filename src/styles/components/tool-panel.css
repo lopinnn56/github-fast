@@ -1,0 +1,46 @@
+/* v4 拆分：来自 components.css:44-88（内容原样保留） */
+/* ---------- Tool panel ---------- */
+.tool { max-width: 1120px; margin: 0 auto; }
+.tool-panel {
+    max-width: 880px;
+    margin: 0 auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    box-shadow: var(--shadow-panel), inset 0 1px 0 var(--glass-highlight);
+}
+.tool-label {
+    display: block;
+    font-size: 1.02rem;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+.input-row { display: flex; gap: 10px; align-items: stretch; }
+#inputUrl, .multi-input {
+    flex: 1;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--field-bg);
+    color: var(--text);
+    font-size: 1rem;
+    font-family: var(--font-sans);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    resize: none;
+}
+/* hidden 属性优先级低于上面的 display 声明，必须显式恢复（Vue :hidden 绑定依赖此规则） */
+#inputUrl[hidden], .multi-input[hidden] { display: none; }
+#inputUrl::placeholder, .multi-input::placeholder { color: var(--muted2); }
+#inputUrl:focus, .multi-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(217, 119, 87, .16);
+}
+.input-tools { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+.paste-hint { font-size: .84rem; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.paste-hint input { accent-color: var(--accent); }
+.hint { color: var(--muted); font-size: .82rem; margin-top: 14px; }
+

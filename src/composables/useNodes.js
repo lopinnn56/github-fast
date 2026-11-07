@@ -1,13 +1,15 @@
 import { computed, reactive } from 'vue';
 import { DEFAULT_NODES, loadNodeState, saveNodeState } from '../lib/nodes-core.js';
+import { createBrowserPlatform } from '../platform/browser.js';
+import { defineFallback, useStore } from '../app/context.js';
 
 /**
- * 节点仓库 Store。
+ * 节点仓库 Store（v4）：纯工厂 + 容器注入。
  *
- * 架构说明（重构 v3.1）：
- * - `createNodesStore` 是工厂：依赖（storage）可注入，测试可另做隔离实例，无需全局单例。
- * - `useNodes()` 返回应用级单例（模块缓存），组件间共享同一份响应式状态。
- * - 纯逻辑（校验 / 存取 / 迁移）仍在 nodes-core.js，可脱离 Vue 单测。
+ * v3.1 在本模块顶层维护 `const singletonStorage = typeof localStorage !== 'undefined' ? ...`，
+ * import 即触碰浏览器全局；v4 由 createAppContext() 统一构造，组件通过 useNodes()
+ * 从 provide/inject 容器取同一实例，容器外才惰性建兼容实例。
+ * 纯逻辑（校验 / 存取 / 迁移）仍在 nodes-core.js，可脱离 Vue 单测。
  */
 export function createNodesStore(storage) {
     const initial = loadNodeState(storage);
@@ -82,14 +84,12 @@ export function createNodesStore(storage) {
     };
 }
 
-// 应用级单例：浏览器环境默认使用 localStorage（Node 测试环境自然退化为默认节点）。
-const singletonStorage = typeof localStorage !== 'undefined' ? localStorage : null;
-let singleton = null;
+// 容器外（node:test / 脚本）：首次调用时才探测浏览器全局，显式 null 也生效。
+defineFallback('nodes', () => createNodesStore(createBrowserPlatform().localStorage));
 
-/** 获取应用级共享节点 Store。 */
+/** 应用级共享节点 Store。 */
 export function useNodes() {
-    if (!singleton) singleton = createNodesStore(singletonStorage);
-    return singleton;
+    return useStore('nodes');
 }
 
 export { DEFAULT_NODES };

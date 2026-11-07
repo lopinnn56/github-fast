@@ -88,12 +88,23 @@
 
 ---
 
-## 六、技术说明
+## 六、技术说明（v4 架构）
 
 - **Vue 3 + Vite**：单页应用，组件化开发；生产构建产物为纯静态文件（`dist/`），可托管在任意静态服务器 / Cloudflare Pages；
-- **分层架构**：`src/lib/`（纯函数库：链接解析、节点存储、剪贴板，无 Vue 依赖，可直接 Node 单测）、`src/composables/`（响应式 Store：节点、测速、模式、转换、Release 解析、Toast）、`src/components/`（UI 组件）；
-- **Store 模式**：每个 composable 导出 `createXxxStore(依赖)` 工厂 + 应用级单例 `useXxx()`，依赖可注入（`storage` / `fetch` / `setTimer`），测试可创建隔离实例，生产环境共享同一份响应式状态；
-- **测试**：`tests/` 使用 Node 内置 `node:test` 运行器（零额外依赖），覆盖纯函数 + Store 工厂行为，当前 107 个用例；
+- **分层架构**：
+
+  | 层 | 目录 | 职责 |
+  |------|------|------|
+  | 配置 | `src/config/constants.js` | 版本号、存储键、限额/超时/并发/TTL 等全部常量集中定义 |
+  | 数据 | `src/data/default-nodes.js` | 78 条内置节点纯数据，与逻辑分离 |
+  | 平台 | `src/platform/browser.js` · `release-gateway.js` | 统一探测 `localStorage` / `sessionStorage` / `location` / `history` / `fetch` / timers；收拢 Release Token、缓存、网络副作用 |
+  | 容器 | `src/app/context.js` · `createAppContext.js` | `createApp()` 时按依赖顺序构造全部 store，一次 `provide`，组件通过 `inject` 取同一实例 |
+  | 纯函数 | `src/lib/` | 链接解析、节点存储、Release 纯函数（`releases-core.js`）、剪贴板、URL 状态、滚动动效；无 Vue 依赖，可直接 Node 单测 |
+  | Store | `src/composables/` | 每个 composable 仅导出 `createXxxStore(依赖)` 纯工厂 + `useXxx()` 容器取用薄封装；无模块级单例 |
+  | UI | `src/components/` · `src/styles/` | 展示组件与按模块拆分的样式 |
+
+- **依赖注入容器**：`createAppContext({ platform })` 显式构造 `gateway → urlState → toast → mode → nodes → speedTest → converter → releaseResolver → copy`，`releaseResolver` 直接拿到注入的 `converter`（v3.1 里它内部偷偷调 `useConverter()` 的隐藏单例耦合已消除），`copy` 把三处重复的「复制 + Toast」收敛为一份 store；
+- **测试**：`tests/` 使用 Node 内置 `node:test` 运行器（零额外依赖），覆盖纯函数、Store 工厂、平台适配层、容器注入与复制 store，当前 **129 个用例**；容器外调用 `useXxx()` 会惰性构造兼容作用域，因此不需要 mock 浏览器全局即可跑测试；
 - **隐私友好**：不发送你的链接到任何服务器（节点测速为浏览器直连节点本身），不记录、不缓存；
 - **本地拼接**：所有加速 URL 均在浏览器端通过字符串拼接生成；
 - **节点持久化**：你的节点增删 / 排序保存在浏览器 `localStorage`（自动兼容并迁移 v2 旧数据）；测速结果缓存在 `sessionStorage`（5 分钟）。

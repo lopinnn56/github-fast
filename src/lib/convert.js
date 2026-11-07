@@ -1,6 +1,7 @@
 /**
  * 链接识别与加速地址拼装 —— 纯函数库，无 DOM / 存储副作用，可直接单测。
  */
+import { LIMITS } from '../config/constants.js';
 
 // 允许省略协议直接书写的 GitHub 系域名。
 // github.com 及其任意子域（www./gist./codeload./api. 等）均接受；
@@ -160,8 +161,8 @@ export function buildCloneCommand(targetUrl) {
     return 'git clone ' + targetUrl;
 }
 
-// 单次批量转换的上限，防止粘贴超大文本时 DOM 爆炸
-export const MAX_BATCH = 100;
+// 单次批量转换的上限，防止粘贴超大文本时 DOM 爆炸（v4：集中到 config/constants.js）
+export const MAX_BATCH = LIMITS.maxBatch;
 
 /**
  * 把多行文本解析为去重后的规范化 URL 列表。

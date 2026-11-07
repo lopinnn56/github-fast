@@ -1,0 +1,13 @@
+/* v4 拆分：来自 components.css:375-386（内容原样保留） */
+/* Node source details */
+.src-details { margin-top: 18px; border-top: 1px dashed var(--border); padding-top: 14px; }
+.src-details summary { cursor: pointer; color: var(--accent); font-size: .86rem; user-select: none; }
+.src-details summary:hover { color: var(--text); }
+.src-body { margin-top: 12px; color: var(--muted); font-size: .86rem; line-height: 1.8; }
+.src-body ul { list-style: none; display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.src-body li { padding-left: 18px; position: relative; }
+.src-body li::before { content: '▹'; position: absolute; left: 0; color: var(--accent); }
+.src-body a { color: var(--accent); text-decoration: none; }
+.src-body a:hover { text-decoration: underline; }
+.src-maker { margin-top: 12px; color: var(--text); }
+

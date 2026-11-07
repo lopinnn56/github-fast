@@ -1,0 +1,30 @@
+/* v4 拆分：来自 components.css:425-454（内容原样保留） */
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+    .feature-grid { grid-template-columns: 1fr; max-width: 560px; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    /* 移动端 GPU 弱，大尺寸 blur 动画代价高：直接关闭背景光斑 */
+    .bg-blobs { display: none; }
+}
+@media (max-width: 560px) {
+    .hero { padding: 72px 20px 64px; }
+    main > section { padding: 64px 20px; }
+    .input-row { flex-direction: column; }
+    .btn-primary { width: 100%; }
+    .btn-nav.btn-primary { width: auto; }
+    .hero-cta .btn { width: 100%; }
+    .results-head-right { width: 100%; justify-content: space-between; }
+    .node-row .n-host { display: none; }
+    /* 节点行按钮过多会挤没节点名：窄屏下「信息」与「操作」拆为两行 */
+    .node-row { flex-wrap: wrap; row-gap: 8px; }
+    .node-row .n-info { flex: 1 1 100%; }
+    .node-row .n-actions { margin-left: auto; }
+    .node-row .n-mini { padding: 4px 10px; font-size: .76rem; }
+    .group-head .ri-actions { width: 100%; }
+    .tool-panel, .nodes-card { padding: 22px 18px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+    .tool-panel, .nodes-card, .feature-card, .faq-item {
+        backdrop-filter: blur(10px) saturate(var(--glass-sat));
+        -webkit-backdrop-filter: blur(10px) saturate(var(--glass-sat));
+    }
+}

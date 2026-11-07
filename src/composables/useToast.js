@@ -1,14 +1,19 @@
 import { reactive } from 'vue';
+import { LIMITS } from '../config/constants.js';
+import { defineFallback, useStore } from '../app/context.js';
 
 /**
- * Toast Store（重构 v3.1）：工厂 + 应用级单例。
- * `createToastStore` 可注入定时器便于测试；生产用 `useToast()` 共享同一实例。
+ * Toast Store（v4）：纯工厂 + 容器注入。
+ *
+ * v3.1 在本模块内部维护 `let singleton`；v4 由 createAppContext() 统一构造，
+ * 组件通过 useToast() 从 provide/inject 容器取同一实例，容器外才惰性建兼容实例。
+ * `createToastStore(setTimer, clearTimer)` 仍可注入定时器便于单测。
  */
 export function createToastStore(setTimer = setTimeout, clearTimer = clearTimeout) {
     const toast = reactive({ msg: '', visible: false });
     let timer = null;
 
-    function showToast(msg, ms = 1800) {
+    function showToast(msg, ms = LIMITS.toastMs) {
         toast.msg = msg;
         toast.visible = true;
         if (timer) clearTimer(timer);
@@ -18,10 +23,9 @@ export function createToastStore(setTimer = setTimeout, clearTimer = clearTimeou
     return { toast, showToast };
 }
 
-let singleton = null;
+defineFallback('toast', () => createToastStore());
 
-/** 全局轻提示（应用级单例）。 */
+/** 全局轻提示（容器实例；容器外为懒建兼容实例）。 */
 export function useToast() {
-    if (!singleton) singleton = createToastStore();
-    return singleton;
+    return useStore('toast');
 }

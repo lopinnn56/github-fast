@@ -1,0 +1,25 @@
+/* v4 拆分：来自 base.css:383-406（内容原样保留） */
+/* ---------- Back to top ---------- */
+.back-top {
+    position: fixed;
+    right: 20px;
+    bottom: 24px;
+    z-index: 50;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg-strong);
+    color: var(--text);
+    font-size: 1.05rem;
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-highlight);
+    transition: opacity .3s ease, transform .3s ease, border-color .2s, color .2s;
+}
+.back-top:not([hidden]) { animation: rise .3s ease both; }
+.back-top:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+.back-top:active { transform: translateY(0); }
+

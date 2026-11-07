@@ -1,0 +1,24 @@
+/* v4 拆分：来自 base.css:407-429（内容原样保留） */
+/* ---------- Scroll reveal ---------- */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+.reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity .6s ease, transform .6s ease;
+    transition-delay: var(--i, 0ms);
+}
+.reveal.in-view {
+    opacity: 1;
+    transform: none;
+}
+

@@ -1,0 +1,17 @@
+/* v4 拆分：来自 base.css:367-382（内容原样保留） */
+/* ---------- Toast ---------- */
+.toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ok);
+    color: #05291c;
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: var(--shadow-toast);
+    z-index: 60;
+}
+.toast:not([hidden]) { animation: rise .25s ease both; }
+

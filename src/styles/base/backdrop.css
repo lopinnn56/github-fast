@@ -1,0 +1,71 @@
+/* v4 拆分：来自 base.css:30-99（内容原样保留） */
+/* ---------- Liquid glass backdrop ---------- */
+.bg-blobs {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.bg-blobs span {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .5;
+}
+.bg-blobs span:nth-child(1) {
+    width: 46vw;
+    height: 46vw;
+    top: -12vw;
+    left: -10vw;
+    background: radial-gradient(circle at 30% 30%, var(--blob-1), transparent 65%);
+    animation: blob-drift-1 26s ease-in-out infinite;
+}
+.bg-blobs span:nth-child(2) {
+    width: 40vw;
+    height: 40vw;
+    top: 38%;
+    right: -14vw;
+    background: radial-gradient(circle at 60% 40%, var(--blob-2), transparent 65%);
+    animation: blob-drift-2 32s ease-in-out infinite;
+}
+.bg-blobs span:nth-child(3) {
+    width: 42vw;
+    height: 42vw;
+    bottom: -14vw;
+    left: 16%;
+    background: radial-gradient(circle at 50% 50%, var(--blob-3), transparent 65%);
+    animation: blob-drift-3 38s ease-in-out infinite;
+}
+
+@keyframes blob-drift-1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(9vw, 7vh) scale(1.12); }
+}
+@keyframes blob-drift-2 {
+    0%, 100% { transform: translate(0, 0) scale(1.05); }
+    50% { transform: translate(-7vw, -6vh) scale(.92); }
+}
+@keyframes blob-drift-3 {
+    0%, 100% { transform: translate(0, 0) scale(.95); }
+    50% { transform: translate(6vw, -8vh) scale(1.1); }
+}
+
+.hero, main, .footer { position: relative; z-index: 1; }
+
+::selection { background: rgba(217, 119, 87, .35); }
+
+.skip-link {
+    position: fixed;
+    top: -48px;
+    left: 16px;
+    z-index: 100;
+    background: var(--accent);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: top .2s;
+}
+.skip-link:focus { top: 12px; }
+

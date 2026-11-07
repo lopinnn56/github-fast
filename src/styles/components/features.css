@@ -1,0 +1,44 @@
+/* v4 拆分：来自 components.css:1-43（内容原样保留） */
+/* 组件层：特性卡片 / 工具面板 / 结果区 / 节点管理 / FAQ / 响应式 */
+
+/* ---------- Feature grid ---------- */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 1120px;
+    margin: 0 auto;
+}
+.feature-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 30px 28px;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+    box-shadow: var(--shadow-card), inset 0 1px 0 var(--glass-highlight);
+    transition: border-color .25s, transform .25s, background-color .25s;
+}
+.feature-card:hover {
+    border-color: rgba(217, 119, 87, .45);
+    background: var(--glass-bg-strong);
+    transform: translateY(-3px);
+}
+.feature-card h3 {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+.feature-card p { color: var(--muted); font-size: .95rem; line-height: 1.7; }
+.feature-card code, .faq-body code, .hint code {
+    font-family: var(--font-mono);
+    font-size: .82em;
+    background: var(--field);
+    border: 1px solid var(--border);
+    color: var(--ok);
+    padding: 1px 6px;
+    border-radius: 5px;
+}
+.feature-card em, .faq-body em { color: var(--accent); font-style: normal; }
+

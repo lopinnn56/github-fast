@@ -1,14 +1,15 @@
 <script setup>
 // Release 自动解析：仓库主页链接 → latest release 全部附件 → 一键加入加速列表。
-// 一键加速后行内展开原链 + 前 N 条加速链 + “查看全部”滚动定位，不自动触发下载。
+// v4：状态/缓存/滚动逻辑保留在本组件，附件列表渲染交给 ReleaseAssetList.vue，
+// 行内加速链交给 AccelLinks.vue，scoped CSS 外移到 styles/release.css。
 // 自动查询由父组件通过 auto 控制（批量时只自动前 N 个），失败可手动重试。
 import { computed, onMounted, ref, watch } from 'vue';
 import { useReleaseResolver } from '../composables/useReleaseResolver.js';
 import { useNodes } from '../composables/useNodes.js';
 import { useToast } from '../composables/useToast.js';
-import { copyText } from '../lib/clipboard.js';
 import { getNodeId } from '../lib/convert.js';
-import { parseRepoSlug, formatSize, buildArchiveUrl, buildTopAccelLinks, TOP_ACCEL_LINKS } from '../lib/releases.js';
+import { parseRepoSlug, buildArchiveUrl, buildTopAccelLinks, TOP_ACCEL_LINKS } from '../lib/releases.js';
+import ReleaseAssetList from './ReleaseAssetList.vue';
 
 const props = defineProps({
     repoUrl: { type: String, required: true },
@@ -46,12 +47,6 @@ onMounted(function () {
     if (props.auto) load(false);
 });
 
-function copyWithToast(text, btn) {
-    copyText(text, btn).then(function (ok) {
-        showToast(ok ? '已复制' : '复制失败，请手动复制');
-    });
-}
-
 // 展开行的加速链缓存：同一下载链接只在首次展开时计算一次（节点列表变化时自动失效）。
 const topLinksCache = new Map();
 
@@ -73,10 +68,6 @@ function onAccelerate(url) {
     // 无论新加入还是已存在，都展开行内提示，让用户直接看到原链与下载入口
     expanded.value[url] = true;
     topLinksCache.delete(url);
-}
-
-function isExpanded(url) {
-    return Boolean(url && expanded.value[url]);
 }
 
 /** 滚动到下方结果区中该下载链接的完整分组，并闪一下高亮。 */
@@ -127,161 +118,13 @@ const archiveFallback = computed(function () {
             </span>
         </div>
 
-        <div v-else-if="state.status === 'done' && state.data">
-            <p class="rb-meta">
-                {{ state.data.name }} · {{ state.data.assets.length }} 个文件
-                <a v-if="state.data.htmlUrl" class="rb-link" :href="state.data.htmlUrl" target="_blank" rel="noopener">查看 Release 页</a>
-            </p>
-            <ul v-if="state.data.assets.length" class="rb-list">
-                <li v-for="a in state.data.assets" :key="a.downloadUrl" class="rb-item">
-                    <span class="rb-name" :title="a.downloadUrl">{{ a.name }}</span>
-                    <span class="rb-size">{{ formatSize(a.size) }}{{ a.downloadCount ? ' · ' + a.downloadCount + ' 次下载' : '' }}</span>
-                    <span class="rb-actions">
-                        <button class="mini-btn rb-go" type="button" @click="onAccelerate(a.downloadUrl)">{{ isExpanded(a.downloadUrl) ? '已加入 ✓' : '一键加速' }}</button>
-                        <button class="mini-btn" type="button" @click="copyWithToast(a.downloadUrl, $event.currentTarget)">复制原链</button>
-                        <a class="mini-btn" :href="a.downloadUrl" target="_blank" rel="noopener">打开</a>
-                    </span>
-                    <div v-if="isExpanded(a.downloadUrl)" class="rb-accel">
-                        <div class="rb-accel-row rb-accel-orig">
-                            <span class="rb-accel-label">原链</span>
-                            <span class="rb-accel-url" :title="a.downloadUrl">{{ a.downloadUrl }}</span>
-                            <span class="rb-actions">
-                                <button class="mini-btn" type="button" @click="copyWithToast(a.downloadUrl, $event.currentTarget)">复制</button>
-                                <a class="mini-btn" :href="a.downloadUrl" target="_blank" rel="noopener">打开</a>
-                            </span>
-                        </div>
-                        <div v-for="t in topLinks(a.downloadUrl)" :key="t.target" class="rb-accel-row">
-                            <span class="rb-accel-label" :title="t.name">{{ t.name }}</span>
-                            <span class="rb-accel-url" :title="t.target">{{ t.target }}</span>
-                            <span class="rb-actions">
-                                <button class="mini-btn" type="button" @click="copyWithToast(t.target, $event.currentTarget)">复制</button>
-                                <a class="mini-btn rb-dl" :href="t.target" target="_blank" rel="noopener">下载</a>
-                            </span>
-                        </div>
-                        <button class="mini-btn rb-more" type="button" @click="scrollToGroup(a.downloadUrl)">在下方查看全部 {{ totalAccelCount }} 个节点 →</button>
-                    </div>
-                </li>
-            </ul>
-            <div v-else class="rb-row">
-                <span class="rb-muted">该版本无附件，可直接加速源码包。</span>
-                <span class="rb-actions">
-                    <button class="mini-btn rb-go" type="button" @click="onAccelerate(archiveFallback)">{{ isExpanded(archiveFallback) ? '已加入 ✓' : '一键加速源码包' }}</button>
-                    <button class="mini-btn" type="button" @click="copyWithToast(archiveFallback, $event.currentTarget)">复制原链</button>
-                </span>
-            </div>
-            <div v-if="isExpanded(archiveFallback) && !state.data.assets.length" class="rb-accel">
-                <div class="rb-accel-row rb-accel-orig">
-                    <span class="rb-accel-label">原链</span>
-                    <span class="rb-accel-url" :title="archiveFallback">{{ archiveFallback }}</span>
-                    <span class="rb-actions">
-                        <button class="mini-btn" type="button" @click="copyWithToast(archiveFallback, $event.currentTarget)">复制</button>
-                        <a class="mini-btn" :href="archiveFallback" target="_blank" rel="noopener">打开</a>
-                    </span>
-                </div>
-                <div v-for="t in topLinks(archiveFallback)" :key="t.target" class="rb-accel-row">
-                    <span class="rb-accel-label" :title="t.name">{{ t.name }}</span>
-                    <span class="rb-accel-url" :title="t.target">{{ t.target }}</span>
-                    <span class="rb-actions">
-                        <button class="mini-btn" type="button" @click="copyWithToast(t.target, $event.currentTarget)">复制</button>
-                        <a class="mini-btn rb-dl" :href="t.target" target="_blank" rel="noopener">下载</a>
-                    </span>
-                </div>
-                <button class="mini-btn rb-more" type="button" @click="scrollToGroup(archiveFallback)">在下方查看全部 {{ totalAccelCount }} 个节点 →</button>
-            </div>
-        </div>
+        <ReleaseAssetList v-else-if="state.status === 'done' && state.data"
+                          :release="state.data"
+                          :archive-fallback="archiveFallback"
+                          :expanded="expanded"
+                          :top-links="topLinks"
+                          :total="totalAccelCount"
+                          @accelerate="onAccelerate"
+                          @view-all="scrollToGroup" />
     </div>
 </template>
-
-<style scoped>
-.release-box {
-    background: var(--field);
-    border: 1px dashed var(--border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.rb-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.rb-title { font-size: .82rem; font-weight: 700; color: var(--text); }
-.rb-tag {
-    font-size: .68rem;
-    font-weight: 700;
-    color: #101010;
-    background: #4ecf9a;
-    padding: 2px 8px;
-    border-radius: 6px;
-}
-.rb-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.rb-muted { font-size: .82rem; color: var(--muted); }
-.rb-error .rb-muted { color: var(--bad, #ff7a90); }
-.rb-actions { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
-.rb-meta { font-size: .8rem; color: var(--muted); }
-.rb-link { color: var(--accent); text-decoration: none; margin-left: 8px; }
-.rb-link:hover { text-decoration: underline; }
-.rb-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.rb-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    background: var(--row-bg);
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    padding: 8px 10px;
-}
-.rb-name {
-    font-family: var(--font-mono);
-    font-size: .8rem;
-    color: var(--text);
-    word-break: break-all;
-    flex: 1;
-    min-width: 140px;
-}
-.rb-size { font-size: .76rem; color: var(--muted2); white-space: nowrap; }
-.rb-go { border-color: var(--accent); color: var(--accent); }
-.rb-go:hover { background: var(--accent); color: #fff; }
-/* 一键加速后的行内下载提示 */
-.rb-accel {
-    flex: 1 1 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border);
-}
-.rb-accel-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    background: var(--field);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 7px 9px;
-}
-.rb-accel-orig { border-style: solid; border-color: var(--accent); }
-.rb-accel-label {
-    font-size: .7rem;
-    font-weight: 700;
-    color: var(--accent);
-    max-width: 110px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-.rb-accel-url {
-    font-family: var(--font-mono);
-    font-size: .74rem;
-    color: var(--muted);
-    word-break: break-all;
-    flex: 1;
-    min-width: 140px;
-}
-.rb-accel .rb-actions { margin-left: auto; }
-.rb-dl { border-color: var(--accent); color: var(--accent); }
-.rb-dl:hover { background: var(--accent); color: #fff; }
-.rb-more { align-self: flex-start; }
-</style>

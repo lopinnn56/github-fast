@@ -1,0 +1,33 @@
+/* v4 拆分：来自 base.css:335-366（内容原样保留） */
+/* ---------- Footer ---------- */
+.footer {
+    border-top: 1px solid var(--border);
+    padding: 64px 24px 36px;
+    margin-top: 32px;
+    background: var(--bg-soft);
+}
+.footer-grid {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 40px;
+}
+.footer-logo { font-weight: 700; font-size: 1.05rem; margin-bottom: 10px; }
+.footer-brand p:not(.footer-logo) { color: var(--muted); font-size: .88rem; line-height: 1.75; max-width: 260px; }
+.footer-col { display: flex; flex-direction: column; gap: 9px; }
+.footer-col-title { color: var(--text); font-weight: 600; font-size: .9rem; margin-bottom: 4px; }
+.footer-col a { color: var(--muted); text-decoration: none; font-size: .88rem; transition: color .2s; }
+.footer-col a:hover { color: var(--accent); }
+.footer-note { color: var(--muted2); font-size: .82rem; margin-top: 4px; }
+.footer-bottom {
+    max-width: 1120px;
+    margin: 44px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--muted2);
+    font-size: .8rem;
+}
+.footer-os { margin-top: 6px; }
+

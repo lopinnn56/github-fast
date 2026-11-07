@@ -1,0 +1,22 @@
+/* v4 拆分：来自 base.css:454-475（内容原样保留） */
+/* ---------- Glass fallback (no backdrop-filter support) ---------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .tool-panel, .nodes-card, .feature-card, .faq-item {
+        background: var(--card);
+        box-shadow: var(--shadow-nodes);
+    }
+    .bg-blobs { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .bg-blobs span { animation: none; }
+    .reveal { opacity: 1; transform: none; }
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

@@ -1,0 +1,135 @@
+/* v4 拆分：来自 components.css:109-242（内容原样保留） */
+/* Results */
+.results { margin-top: 26px; border-top: 1px dashed var(--border); padding-top: 22px; }
+.results-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.results-head h3 { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500; }
+.results-head-right { display: flex; align-items: center; gap: 10px; }
+.seg { position: relative; display: inline-flex; background: var(--field); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+.seg-ind {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    width: 40px;
+    border-radius: 8px;
+    background: var(--accent);
+    box-shadow: 0 4px 14px rgba(217, 119, 87, .35);
+    transition: left .28s cubic-bezier(.4, 0, .2, 1), width .28s cubic-bezier(.4, 0, .2, 1);
+    pointer-events: none;
+}
+.seg-btn {
+    position: relative;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: .88rem;
+    font-family: inherit;
+    transition: color .2s;
+}
+.seg-btn:hover { color: var(--text); }
+.seg-btn.active { color: #fff; }
+
+.result-list { display: flex; flex-direction: column; gap: 14px; }
+.load-more { display: flex; justify-content: center; margin-top: 16px; }
+.link-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* 批量转换时跳过视口外分组的布局与绘制，避免大 DOM 集卡顿 */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+    border-radius: 12px;
+    transition: box-shadow .3s;
+}
+/* “在下方查看全部”滚动定位时的短暂高亮 */
+.link-group.flash { box-shadow: 0 0 0 2px var(--accent); content-visibility: visible; }
+.group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border);
+}
+.group-head .gh-link {
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: var(--text);
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+}
+.group-head .ri-actions { margin-left: auto; }
+
+.result-item {
+    background: var(--row-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    animation: rise .28s ease both;
+}
+.result-item .ri-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+.result-item .ri-left { display: flex; align-items: center; gap: 8px; }
+.result-item .ri-name { font-weight: 600; color: var(--accent); }
+.result-item .ri-tag {
+    font-size: .64rem;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: #101010;
+    background: var(--ok);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+.result-item.ti-raw .ri-tag { background: #ffd166; }
+.result-item.ti-file .ri-tag { background: #6c8cff; color: #fff; }
+.result-item.ti-release .ri-tag { background: #4ecf9a; }
+.result-item.ti-repo .ri-tag { background: #c084fc; color: #fff; }
+.result-item.ti-gist .ri-tag { background: #ff8fab; color: #fff; }
+.result-item .ri-actions { display: flex; gap: 8px; }
+.link-subhead {
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: var(--muted2);
+    margin: 4px 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.link-subhead::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 2px;
+    background: var(--accent);
+}
+.result-item.pinned { border-left: 3px solid var(--accent); }
+.result-item .ri-url {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: var(--muted);
+    word-break: break-all;
+    background: var(--field);
+    padding: 9px 11px;
+    border-radius: 9px;
+}
+.mini-btn {
+    font-size: .8rem;
+    padding: 5px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    text-decoration: none;
+    font-family: inherit;
+    transition: border-color .2s, color .2s;
+}
+.mini-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mini-btn.copied, .btn.copied { border-color: var(--ok); color: var(--ok); }
+.mini-btn.copied::before, .btn.copied::before { content: '✓ '; }
+
