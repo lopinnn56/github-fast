@@ -19,7 +19,7 @@ export function createAutoPruneStore({ health, nodes, toast }) {
 
     /**
      * 完整巡检：探测全部节点 → 剔除失效 → 返回结果摘要。
-     * @param {{silent?:boolean, rounds?:number}} [opts] silent=true 时不弹开始提示（启动自动巡检用）
+     * @param {{silent?:boolean, rounds?:number}} [opts] silent=true 时不弹「开始」提示（启动自动巡检用）
      * @returns {Promise<{summary:object, removed:Array<object>, guarded:boolean}|null>} 运行中返回 null
      */
     async function checkAndPrune(opts) {
@@ -36,6 +36,7 @@ export function createAutoPruneStore({ health, nodes, toast }) {
             lastRemoved.value = pruned.removed;
             lastSummary.value = probe.summary;
             if (pruned.removed.length) {
+                // 无论是否静默都要提示：用户需要知道列表变了（自动巡检同样可见）
                 showToast('已自动剔除 ' + pruned.removed.length + ' 个不可用节点，保留 ' +
                     probe.summary.healthy + ' 个健康节点');
             } else if (!options.silent) {
@@ -50,7 +51,10 @@ export function createAutoPruneStore({ health, nodes, toast }) {
         }
     }
 
-    /** 启动时按节流条件自动巡检一次（默认 6 小时一次）。 */
+    /**
+     * 启动时按节流条件自动巡检一次（默认 6 小时一次）。
+     * 自动巡检不再完全静默：剔除了节点就提示，否则保持安静（不打扰）。
+     */
     async function autoCheckIfDue() {
         if (!health.shouldAutoRun()) return null;
         return checkAndPrune({ silent: true });

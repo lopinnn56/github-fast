@@ -35,3 +35,14 @@
     cursor: pointer;
 }
 .health-switch:hover { color: var(--text); }
+.health-removed {
+    margin: -6px 0 14px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    background: rgba(255, 122, 144, .08);
+    border: 1px solid rgba(255, 122, 144, .22);
+    color: var(--bad);
+    font-size: .76rem;
+    line-height: 1.5;
+    word-break: break-word;
+}

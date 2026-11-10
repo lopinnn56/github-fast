@@ -23,6 +23,8 @@ export function createNodesStore(storage) {
 
     // v2 -> v3 迁移后立即落盘，避免下次仍走旧数据分支
     if (initial.migrated) saveNodeState(storage, state);
+    // 过滤了已退役节点后同样要落盘，否则下次仍会从旧缓存读到它们
+    else if (initial.retiredRemoved) saveNodeState(storage, state);
 
     function persist() {
         saveNodeState(storage, state);

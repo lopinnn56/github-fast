@@ -1,7 +1,7 @@
 // 单元测试：Node 内置测试运行器（node --test tests/），零额外依赖。
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadNodeState, saveNodeState, validNode, DEFAULT_NODES, STORAGE_KEY } from '../src/lib/nodes-core.js';
+import { loadNodeState, saveNodeState, validNode, DEFAULT_NODES, RETIRED_NODES, STORAGE_KEY, filterRetiredNodes } from '../src/lib/nodes-core.js';
 
 /** 内存版 localStorage，模拟配额异常等场景 */
 function mockStorage(initial = {}) {
@@ -101,5 +101,48 @@ describe('saveNodeState 落盘与旧 key 清理', () => {
     it('storage 不可用时静默降级（不抛错）', () => {
         const broken = { setItem() { throw new Error('quota'); }, removeItem() {} };
         assert.doesNotThrow(() => saveNodeState(broken, { main: [], pinned: [] }));
+    });
+});
+
+describe('已退役节点过滤（老缓存自动精简）', () => {
+    const retired = RETIRED_NODES[0];
+    const alive = DEFAULT_NODES[0];
+
+    it('退役表与默认清单无交集', () => {
+        const aliveIds = new Set(DEFAULT_NODES.map(n => n.prefix));
+        for (const n of RETIRED_NODES) {
+            assert.ok(!aliveIds.has(n.prefix), n.name + ' 同时出现在默认与退役表');
+        }
+    });
+
+    it('filterRetiredNodes 剔除退役节点、保留正常节点', () => {
+        const out = filterRetiredNodes([alive, retired]);
+        assert.deepStrictEqual(out.kept.map(n => n.name), [alive.name]);
+        assert.deepStrictEqual(out.removed.map(n => n.name), [retired.name]);
+    });
+
+    it('loadNodeState 读取旧缓存时自动过滤退役节点并计数', () => {
+        const st = mockStorage({
+            [STORAGE_KEY]: JSON.stringify({ main: [alive, retired], pinned: [retired] })
+        });
+        const s = loadNodeState(st);
+        assert.deepStrictEqual(s.main.map(n => n.name), [alive.name]);
+        assert.deepStrictEqual(s.pinned, []);
+        assert.strictEqual(s.retiredRemoved, 2);
+    });
+
+    it('v2 迁移同样过滤退役节点', () => {
+        const st = mockStorage({ gh_accel_nodes_v2: JSON.stringify([alive, retired]) });
+        const s = loadNodeState(st);
+        assert.strictEqual(s.migrated, true);
+        assert.deepStrictEqual(s.main.map(n => n.name), [alive.name]);
+        assert.strictEqual(s.retiredRemoved, 1);
+    });
+
+    it('无退役节点时 retiredRemoved 为 0，不影响原有行为', () => {
+        const st = mockStorage({ [STORAGE_KEY]: JSON.stringify({ main: [NODE_A], pinned: [] }) });
+        const s = loadNodeState(st);
+        assert.strictEqual(s.retiredRemoved, 0);
+        assert.deepStrictEqual(s.main, [NODE_A]);
     });
 });
