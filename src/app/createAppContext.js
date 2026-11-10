@@ -18,6 +18,8 @@ import { createSpeedTestStore } from '../composables/useSpeedTest.js';
 import { createConverterStore } from '../composables/useConverter.js';
 import { createReleaseResolverStore } from '../composables/useReleaseResolver.js';
 import { createCopyStore } from '../composables/useCopy.js';
+import { createNodeHealthStore } from '../composables/useNodeHealth.js';
+import { createAutoPruneStore } from '../composables/useAutoPrune.js';
 
 /**
  * @param {object} [opts]
@@ -25,7 +27,8 @@ import { createCopyStore } from '../composables/useCopy.js';
  * @returns {{
  *   platform: object, gateway: object, urlState: object,
  *   toast: object, mode: object, nodes: object, speedTest: object,
- *   converter: object, releaseResolver: object, copy: object
+ *   converter: object, releaseResolver: object, copy: object,
+ *   nodeHealth: object, autoPrune: object
  * }}
  */
 export function createAppContext({ platform = null } = {}) {
@@ -52,5 +55,12 @@ export function createAppContext({ platform = null } = {}) {
     const releaseResolver = createReleaseResolverStore({ toast, gateway, converter });
     const copy = createCopyStore({ toast });
 
-    return { platform: p, gateway, urlState, toast, mode, nodes, speedTest, converter, releaseResolver, copy };
+    // 4) 节点健康检查 + 自动剔除编排（health 只测，nodes 只删，autoPrune 串联）
+    const nodeHealth = createNodeHealthStore({ storage: p.localStorage, fetchFn: p.fetchFn });
+    const autoPrune = createAutoPruneStore({ health: nodeHealth, nodes, toast });
+
+    return {
+        platform: p, gateway, urlState, toast, mode, nodes, speedTest,
+        converter, releaseResolver, copy, nodeHealth, autoPrune
+    };
 }

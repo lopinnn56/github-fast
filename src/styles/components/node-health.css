@@ -1,0 +1,37 @@
+/* 节点健康检查控制条（v4 新功能：自动检测 + 自动剔除失效节点） */
+.health-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--field-bg);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+}
+.health-info { display: flex; align-items: baseline; gap: 8px; }
+.health-title {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--text);
+}
+.health-meta { font-size: .76rem; color: var(--muted2); }
+.health-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.health-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .78rem;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+}
+.health-switch input {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+.health-switch:hover { color: var(--text); }

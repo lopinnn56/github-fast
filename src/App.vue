@@ -4,6 +4,7 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 import { useConverter } from './composables/useConverter.js';
 import { useToast } from './composables/useToast.js';
+import { useAutoPrune } from './composables/useAutoPrune.js';
 import { useScrollFx, initReveal } from './lib/ui-fx.js';
 import SiteHeader from './components/SiteHeader.vue';
 import HowItWorks from './components/HowItWorks.vue';
@@ -16,6 +17,7 @@ import NodeManager from './components/NodeManager.vue';
 
 const { applyUrlParams } = useConverter();
 const { toast } = useToast();
+const { autoCheckIfDue } = useAutoPrune();
 const { scrolled, showBackTop, backToTop, bind, unbind } = useScrollFx();
 
 let revealCleanup = null;
@@ -25,6 +27,8 @@ onMounted(function () {
     revealCleanup = initReveal() || null;
     // 地址栏 ?url= 直达：回填输入并出结果
     applyUrlParams();
+    // 节点自动巡检：距上次检测超过设定间隔（默认 6h）才跑，失效节点自动剔除
+    autoCheckIfDue();
 });
 
 onBeforeUnmount(function () {

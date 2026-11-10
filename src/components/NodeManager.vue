@@ -7,6 +7,7 @@ import { useToast } from '../composables/useToast.js';
 import { getNodeId } from '../lib/convert.js';
 import NodeRow from './NodeRow.vue';
 import NodeSourceNotes from './NodeSourceNotes.vue';
+import NodeHealthPanel from './NodeHealthPanel.vue';
 
 const { main, pinned, total, reorderMain, reorderPinned, reset } = useNodes();
 const { progress, run } = useSpeedTest();
@@ -71,6 +72,8 @@ const countLine = computed(function () {
             <button class="btn btn-ghost btn-sm" type="button" @click="onReset">恢复默认</button>
         </div>
     </div>
+
+    <NodeHealthPanel />
 
     <div class="pinned-head" :hidden="!pinned.length">
         <span class="pinned-title">置顶队列</span>

@@ -26,6 +26,7 @@
 - **批量转换**：一次粘贴多行链接，结果按链接分组展示，可逐组复制；
 - **URL 参数直达**：访问带 `?url=...` 的链接自动填充并转换，方便分享；
 - **节点测速（并发）**：6 路并发探测节点连通性与延迟，超时 / 不可达节点标记 ✕，结果缓存 5 分钟；
+- **自动检测 + 自动剔除（新）**：用真实文件内容校验节点是否真的能代理 GitHub 资源（只认「响应体确实是该文件」的铁证，403 / 404 / JS 挑战页 / 域名停放广告页一律判失效），失效节点自动从列表中删除，不必手动清理；默认每 6 小时自动巡检一次，也可随时点「立即检测并剔除」；
 - **深浅主题**：自动跟随系统深浅色模式（`prefers-color-scheme`）切换，无需手动设置；
 - **拖拽排序 / 置顶 / 删除**：自由管理你的节点列表；
 - **恢复默认**：随时重置回内置的公益节点集合。
@@ -50,7 +51,7 @@
 
 ### 1. GitHub Proxy 聚合站 — [github.akams.cn](https://github.akams.cn/)
 
-本项目内置的大部分节点（78 个）采集自该站点。它是一个 **GitHub 镜像加速聚合与实时测速平台**，本身也提供 GitHub Proxy / Docker Proxy / KMS 等服务。
+本项目内置的节点采集自该站点与社区分享。它是一个 **GitHub 镜像加速聚合与实时测速平台**，本身也提供 GitHub Proxy / Docker Proxy / KMS 等服务。
 
 - 站点明确支持 **API、Git Clone、Releases、Archive、Gist、Raw** 等资源加速；
 - 页面提供**实时节点测速列表**，本项目优先选取了其中带有有效延迟、且稳定性相对较好的节点；
@@ -81,7 +82,7 @@
 
 1. 打开网站，粘贴 GitHub 链接（也支持 `github.com/user/repo` 简写、或 `raw.githubusercontent.com/...`）；
 2. 网站会实时转换并在「加速链接」区列出所有节点的结果；
-3. 点击「**测速**」按钮，检测节点连通性与延迟，超时 / 不可达节点会被标记 ✕；
+3. 点击「**测速**」按钮，检测节点连通性与延迟，超时 / 不可达节点会被标记 ✕；或点「**立即检测并剔除**」做内容级校验，失效节点直接被删除（站点也会每 6 小时自动巡检一次）；
 4. 复制链接或 Clone 命令直接使用即可。
 
 > 若浏览器本地曾保存过旧节点配置，请先点击节点区的「**恢复默认**」，再执行测速。
@@ -96,15 +97,16 @@
   | 层 | 目录 | 职责 |
   |------|------|------|
   | 配置 | `src/config/constants.js` | 版本号、存储键、限额/超时/并发/TTL 等全部常量集中定义 |
-  | 数据 | `src/data/default-nodes.js` | 78 条内置节点纯数据，与逻辑分离 |
+  | 数据 | `src/data/default-nodes.js` | 31 条内置节点纯数据（2026-11-10 多轮实测清理后），与逻辑分离 |
   | 平台 | `src/platform/browser.js` · `release-gateway.js` | 统一探测 `localStorage` / `sessionStorage` / `location` / `history` / `fetch` / timers；收拢 Release Token、缓存、网络副作用 |
   | 容器 | `src/app/context.js` · `createAppContext.js` | `createApp()` 时按依赖顺序构造全部 store，一次 `provide`，组件通过 `inject` 取同一实例 |
-  | 纯函数 | `src/lib/` | 链接解析、节点存储、Release 纯函数（`releases-core.js`）、剪贴板、URL 状态、滚动动效；无 Vue 依赖，可直接 Node 单测 |
+  | 纯函数 | `src/lib/` | 链接解析、节点存储、节点健康判定（`node-health.js`）、Release 纯函数（`releases-core.js`）、剪贴板、URL 状态、滚动动效；无 Vue 依赖，可直接 Node 单测 |
   | Store | `src/composables/` | 每个 composable 仅导出 `createXxxStore(依赖)` 纯工厂 + `useXxx()` 容器取用薄封装；无模块级单例 |
   | UI | `src/components/` · `src/styles/` | 展示组件与按模块拆分的样式 |
 
 - **依赖注入容器**：`createAppContext({ platform })` 显式构造 `gateway → urlState → toast → mode → nodes → speedTest → converter → releaseResolver → copy`，`releaseResolver` 直接拿到注入的 `converter`（v3.1 里它内部偷偷调 `useConverter()` 的隐藏单例耦合已消除），`copy` 把三处重复的「复制 + Toast」收敛为一份 store；
-- **测试**：`tests/` 使用 Node 内置 `node:test` 运行器（零额外依赖），覆盖纯函数、Store 工厂、平台适配层、容器注入与复制 store，当前 **129 个用例**；容器外调用 `useXxx()` 会惰性构造兼容作用域，因此不需要 mock 浏览器全局即可跑测试；
+- **节点健康检查**：`useNodeHealth`（探测 + 判定，多轮采样、内容铁证校验、网络错误判 unknown 保守保留）与 `useAutoPrune`（编排剔除 + 提示 + 6 小时节流）分层，`useNodes.pruneByVerdicts` 只负责删；`pruneUnhealthy` 带护栏，剔除后至少保留 `healthMinKeep`（默认 3）个节点，不会把列表清空；
+- **测试**：`tests/` 使用 Node 内置 `node:test` 运行器（零额外依赖），覆盖纯函数、Store 工厂、平台适配层、容器注入、复制 store 与节点健康/自动剔除编排，当前 **161 个用例**；容器外调用 `useXxx()` 会惰性构造兼容作用域，因此不需要 mock 浏览器全局即可跑测试；
 - **隐私友好**：不发送你的链接到任何服务器（节点测速为浏览器直连节点本身），不记录、不缓存；
 - **本地拼接**：所有加速 URL 均在浏览器端通过字符串拼接生成；
 - **节点持久化**：你的节点增删 / 排序保存在浏览器 `localStorage`（自动兼容并迁移 v2 旧数据）；测速结果缓存在 `sessionStorage`（5 分钟）。

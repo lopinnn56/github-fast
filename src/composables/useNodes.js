@@ -1,5 +1,7 @@
 import { computed, reactive } from 'vue';
 import { DEFAULT_NODES, loadNodeState, saveNodeState } from '../lib/nodes-core.js';
+import { getNodeId } from '../lib/convert.js';
+import { pruneUnhealthy } from '../lib/node-health.js';
 import { createBrowserPlatform } from '../platform/browser.js';
 import { defineFallback, useStore } from '../app/context.js';
 
@@ -69,6 +71,31 @@ export function createNodesStore(storage) {
         persist();
     }
 
+    /**
+     * 按健康判定剔除失效节点（v4 新功能）。
+     * 置顶队列与主列表一起参与，保留原有相对顺序；护栏见 pruneUnhealthy。
+     * @param {Record<string,'healthy'|'unhealthy'|'unknown'>} verdicts 以 getNodeId 为键
+     * @param {{minKeep?:number}} [opts]
+     * @returns {{removed:Array<object>, removedFromPinned:number, removedFromMain:number, guarded:boolean}}
+     */
+    function pruneByVerdicts(verdicts, opts) {
+        const flat = state.pinned.concat(state.main);
+        const out = pruneUnhealthy(flat, verdicts || {}, opts);
+        if (!out.removed.length) return { removed: [], removedFromPinned: 0, removedFromMain: 0, guarded: out.guarded };
+        const keptIds = new Set(out.kept.map(getNodeId));
+        const prevPinned = state.pinned.length;
+        state.pinned = state.pinned.filter(function (n) { return keptIds.has(getNodeId(n)); });
+        state.main = state.main.filter(function (n) { return keptIds.has(getNodeId(n)); });
+        persist();
+        const removedFromPinned = prevPinned - state.pinned.length;
+        return {
+            removed: out.removed,
+            removedFromPinned,
+            removedFromMain: out.removed.length - removedFromPinned,
+            guarded: out.guarded
+        };
+    }
+
     return {
         main: computed(() => state.main),
         pinned: computed(() => state.pinned),
@@ -80,6 +107,7 @@ export function createNodesStore(storage) {
         removePinned: (i) => removeFrom('pinned', i),
         reorderMain: (from, to) => reorderIn('main', from, to),
         reorderPinned: (from, to) => reorderIn('pinned', from, to),
+        pruneByVerdicts,
         reset
     };
 }
